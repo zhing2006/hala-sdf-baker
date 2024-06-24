@@ -1,0 +1,4 @@
+projects:
+  - name: hala-sdf-baker
+    global_macros:
+    optional_macro_combinations:

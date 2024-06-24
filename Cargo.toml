@@ -14,6 +14,8 @@ hala-gfx = { path = "./hala-gfx" }
 hala-renderer = { path = "./hala-renderer" }
 hala-imgui = { path = "./hala-imgui" }
 
+shaders = { path = "./shaders" }
+
 anyhow = { version = "1", default-features = false, features = ["backtrace", "std"] }
 time = { version = "0.3", default-features = false }
 clap = { version = "4.4", default-features = false, features = ["derive", "std"] }
