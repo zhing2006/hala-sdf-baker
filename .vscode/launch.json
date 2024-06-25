@@ -1,0 +1,39 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Win Debug hala-sdf-baker",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/hala-sdf-baker",
+            "environment": [
+                {
+                    "name": "RUST_BACKTRACE",
+                    "value": "0"
+                }
+            ],
+            "args": [
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "rust: cargo build"
+        },
+        {
+            "name": "Linux Debug hala-sdf-baker",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/hala-sdf-baker",
+            "env": {
+                "RUST_BACKTRACE": "0"
+            },
+            "args": [
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "rust: cargo build"
+        },
+    ]
+}

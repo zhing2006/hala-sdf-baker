@@ -1,6 +1,9 @@
 use std::fs;
 use serde::Deserialize;
-use hassle_rs::compile_hlsl;
+use hassle_rs::{
+  compile_hlsl,
+  validate_dxil,
+};
 
 // Shader project.
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -122,6 +125,11 @@ fn compile_shaders(shader_dir: &str, output_dir: &str, global_macros: &Vec<Strin
       // Convert defines to &[(&str, Option<&str>)].
       &defines.iter().map(|(k, v)| (k.as_str(), v.as_ref().map(|v| v.as_str()))).collect::<Vec<_>>(),
     ).unwrap();
+
+    let result = validate_dxil(&ir);
+    if let Some(err) = result.err() {
+      println!("Validation shader {} failed: {}", hlsl_file_stem, err);
+    }
 
     let output_dir = format!("{}/{}", &output_dir, hlsl_file_path.to_str().unwrap());
     // Make output directory if it doesn't exist.
