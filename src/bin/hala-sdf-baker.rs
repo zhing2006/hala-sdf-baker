@@ -5,22 +5,26 @@ use anyhow::{
 
 use clap::{arg, Command};
 
-use hala_sdf_baker::config;
-
 use hala_imgui::{
   HalaApplication,
   HalaImGui,
 };
 
+use hala_renderer::renderer;
+
+use hala_sdf_baker::config;
+
 /// The SDF baker application.
 struct SDFBakerApplication {
   log_file: String,
   config: config::AppConfig,
+  renderer: Option<renderer::HalaRenderer>,
   imgui: Option<HalaImGui>,
 }
 
 /// The implementation of the SDF baker application.
 impl SDFBakerApplication {
+
   pub fn new() -> Result<Self> {
     // Parse the command line arguments.
     let matches = cli().get_matches();
@@ -42,13 +46,16 @@ impl SDFBakerApplication {
     Ok(Self {
       log_file: log_file.to_string(),
       config,
+      renderer: None,
       imgui: None,
     })
   }
+
 }
 
 /// The implementation of the application trait for the SDF baker application.
 impl HalaApplication for SDFBakerApplication {
+
   fn get_log_console_fmt(&self) -> &str {
     "{d(%H:%M:%S)} {h({l:<5})} {t:<20.20} - {m}{n}"
   }
@@ -84,16 +91,43 @@ impl HalaApplication for SDFBakerApplication {
   /// param height: The height of the window.
   /// param window: The window.
   /// return: The result.
-  fn before_run(&mut self, _width: u32, _height: u32, _window: &winit::window::Window) -> Result<()> {
+  fn before_run(&mut self, _width: u32, _height: u32, window: &winit::window::Window) -> Result<()> {
+    // Setup the renderer.
+    let gpu_req = hala_gfx::HalaGPURequirements {
+      width: self.config.window.width as u32,
+      height: self.config.window.height as u32,
+      version: (1, 3, 0),
+      require_ray_tracing: false,
+      require_10bits_output: false,
+      is_low_latency: true,
+      require_depth: true,
+      ..Default::default()
+    };
+
+    let mut renderer = renderer::HalaRenderer::new(
+      "PathTracer",
+      &gpu_req,
+      window,
+    )?;
+
+    renderer.commit()?;
+
+    self.imgui = Some(HalaImGui::new(
+      std::rc::Rc::clone(&(*renderer.context)),
+      false,
+    )?);
+
+    self.renderer = Some(renderer);
+
     Ok(())
   }
 
   /// The after run function.
   fn after_run(&mut self) {
-    // if let Some(renderer) = &mut self.renderer.take() {
-    //   renderer.wait_idle().expect("Failed to wait the renderer idle.");
-    //   self.imgui.take();
-    // }
+    if let Some(renderer) = &mut self.renderer.take() {
+      renderer.wait_idle().expect("Failed to wait the renderer idle.");
+      self.imgui.take();
+    }
   }
 
   /// The update function.
@@ -106,7 +140,7 @@ impl HalaApplication for SDFBakerApplication {
         width,
         height,
         |ui| {
-          ui.window("Path Tracer")
+          ui.window("SDF Baker")
             .position([10.0, 10.0], imgui::Condition::FirstUseEver)
             .build(|| {
               if ui.button_with_size("Save", [100.0, 30.0]) {
@@ -119,14 +153,34 @@ impl HalaApplication for SDFBakerApplication {
       imgui.end_frame()?;
     }
 
+    if let Some(renderer) = &mut self.renderer {
+      renderer.update(
+        delta_time,
+        width,
+        height,
+        |index, command_buffers| {
+          if let Some(imgui) = self.imgui.as_mut() {
+            imgui.draw(index, command_buffers)?;
+          }
+
+          Ok(())
+        }
+      )?;
+    }
+
     Ok(())
   }
 
   /// The render function.
   /// return: The result.
   fn render(&mut self) -> Result<()> {
+    if let Some(renderer) = &mut self.renderer {
+      renderer.render()?;
+    }
+
     Ok(())
   }
+
 }
 
 /// The command line interface.

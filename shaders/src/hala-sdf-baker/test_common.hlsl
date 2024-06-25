@@ -1,4 +1,4 @@
 struct vs_to_ps {
   float4 position: SV_Position;
-  float3 color: COLOR0;
+  [[vk::location(0)]] float3 color: COLOR0;
 };
