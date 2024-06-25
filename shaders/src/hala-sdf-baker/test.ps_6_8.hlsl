@@ -1,16 +1,11 @@
-#include "common.hlsl"
+#include "test_common.hlsl"
 
-struct PSInput {
-  float4 position: SV_Position;
-  float3 color: COLOR0;
-};
-
-struct PSOutput {
+struct ps_out {
   float4 color: SV_Target0;
 };
 
-PSOutput Main(PSInput input) {
-  PSOutput output = (PSOutput)0;
+ps_out main(vs_to_ps input) {
+  ps_out output = (ps_out)0;
   output.color = float4(input.color, 1.0);
   return output;
 }

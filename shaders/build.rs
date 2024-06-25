@@ -115,7 +115,7 @@ fn compile_shaders(shader_dir: &str, output_dir: &str, global_macros: &Vec<Strin
     let ir = compile_hlsl(
       hlsl_file.to_str().unwrap(),
       &fs::read_to_string(&hlsl_file).unwrap(),
-      "Main",
+      "main",
       shader_kind,
       // Convert options to &[&str].
       &options.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
