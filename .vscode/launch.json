@@ -16,6 +16,7 @@
                 }
             ],
             "args": [
+                "-c", "./conf/config.yaml"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
@@ -30,6 +31,7 @@
                 "RUST_BACKTRACE": "0"
             },
             "args": [
+                "-c", "./conf/config.yaml"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

@@ -13,3 +13,8 @@ target/
 # Added by cargo
 
 /target
+
+# Custom
+.idea
+logs/
+out/
