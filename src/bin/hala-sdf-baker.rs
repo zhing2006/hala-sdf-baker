@@ -92,6 +92,10 @@ impl HalaApplication for SDFBakerApplication {
   /// param window: The window.
   /// return: The result.
   fn before_run(&mut self, _width: u32, _height: u32, window: &winit::window::Window) -> Result<()> {
+    // Setup features.
+    let mut features = vec!["SDF_BAKER"];
+    features.push("CONSERVATIVE_RASTERIZATION");
+
     // Setup the renderer.
     let gpu_req = hala_gfx::HalaGPURequirements {
       width: self.config.window.width as u32,
@@ -108,6 +112,17 @@ impl HalaApplication for SDFBakerApplication {
       "PathTracer",
       &gpu_req,
       window,
+    )?;
+
+    let shaders_dir = if cfg!(debug_assertions) {
+      format!("shaders/output/debug/hala-sdf-baker/{}", features.join("#"))
+    } else {
+      format!("shaders/output/release/hala-sdf-baker/{}", features.join("#"))
+    };
+    renderer.push_traditional_shaders_with_file(
+      &format!("{}/test.vs_6_8.spv", shaders_dir),
+      &format!("{}/test.ps_6_8.spv", shaders_dir),
+      "test",
     )?;
 
     renderer.commit()?;
