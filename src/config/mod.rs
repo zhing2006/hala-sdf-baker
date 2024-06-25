@@ -9,6 +9,7 @@ pub use window::*;
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct AppConfig {
   pub window: WindowConfig,
+  pub scene_file: String,
 }
 
 /// Validate the application configure.
@@ -16,6 +17,9 @@ pub struct AppConfig {
 /// return: the result of the validation.
 pub fn validate_app_config(config: &AppConfig) -> Result<()> {
   validate_window_config(&config.window)?;
+  if !std::path::Path::new(&config.scene_file).exists() {
+    return Err(anyhow::anyhow!("The scene file \"{}\" is not found.", config.scene_file));
+  }
   Ok(())
 }
 

@@ -10,7 +10,10 @@ use hala_imgui::{
   HalaImGui,
 };
 
-use hala_renderer::renderer;
+use hala_renderer::{
+  renderer,
+  scene,
+};
 
 use hala_sdf_baker::config;
 
@@ -92,7 +95,11 @@ impl HalaApplication for SDFBakerApplication {
   /// param window: The window.
   /// return: The result.
   fn before_run(&mut self, _width: u32, _height: u32, window: &winit::window::Window) -> Result<()> {
-    // Setup features.
+    let now = std::time::Instant::now();
+    let _scene = scene::cpu::HalaScene::new(&self.config.scene_file)?;
+    log::info!("Load scene used {}ms.", now.elapsed().as_millis());
+
+     // Setup features.
     let mut features = vec!["SDF_BAKER"];
     features.push("CONSERVATIVE_RASTERIZATION");
 
@@ -101,6 +108,7 @@ impl HalaApplication for SDFBakerApplication {
       width: self.config.window.width as u32,
       height: self.config.window.height as u32,
       version: (1, 3, 0),
+      require_mesh_shader: false,
       require_ray_tracing: false,
       require_10bits_output: false,
       is_low_latency: true,
