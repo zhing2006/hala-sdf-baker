@@ -10,9 +10,9 @@ struct vs_in {
 
 vs_to_ps main(vs_in input) {
   vs_to_ps output = (vs_to_ps)0;
-  float4 position = mul(m_mtx, float4(input.position.xyz, 1.0));
-  output.position = mul(vp_mtx, position);
+  output.position = mul(mvp_mtx, float4(input.position.xyz, 1.0));
   output.uv = input.uv.xy;
-  output.color = input.normal.xyz * 0.5 + 0.5;
+  float3 normal = normalize(mul(float4(input.normal.xyz, 0.0), i_m_mtx).xyz);
+  output.color = normal.xyz * 0.5 + 0.5;
   return output;
 }
