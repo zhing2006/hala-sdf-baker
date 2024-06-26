@@ -80,6 +80,7 @@ fn compile_shaders(shader_dir: &str, output_dir: &str, global_macros: &Vec<Strin
   options.push("-fspv-target-env=vulkan1.3".to_string());
   options.push("-fspv-reduce-load-size".to_string());
   options.push("-fspv-extension=KHR".to_string());
+  options.push("-fspv-extension=SPV_EXT_descriptor_indexing".to_string());
   options.push("-WX".to_string());
   if profile == "debug" {
     options.push("-Od".to_string());
