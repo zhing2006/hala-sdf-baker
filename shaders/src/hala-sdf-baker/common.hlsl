@@ -82,6 +82,7 @@ struct Material {
 };
 
 struct PushConstants {
+  uint object_index;
   uint material_index;
 };
 
@@ -108,8 +109,7 @@ cbuffer LightBuffer {
 [[vk::binding(3, 0)]]
 StructuredBuffer<Material> g_materials_buffer;
 
-[[vk::binding(0, 1)]]
-cbuffer ObjectUniformBuffer {
+struct ObjectUniformBuffer {
   float4x4 m_mtx;     // The model matrix
   float4x4 i_m_mtx;   // The inverse model matrix
   float4x4 mv_mtx;    // The model-view matrix
@@ -117,6 +117,9 @@ cbuffer ObjectUniformBuffer {
   float4x4 it_mv_mtx; // The inverse transposed model-view matrix
   float4x4 mvp_mtx;   // The model-view-projection matrix
 };
+
+[[vk::binding(0, 1)]]
+ConstantBuffer<ObjectUniformBuffer> g_per_object_data[];
 
 [[vk::binding(0, 2)]]
 Texture2D<float4> g_textures[];
