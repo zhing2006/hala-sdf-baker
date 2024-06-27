@@ -81,23 +81,35 @@ struct Material {
   uint type;
 };
 
-cbuffer GlobalUniformBuffer : register(b0, space0) {
+struct PushConstants {
+  uint material_index;
+};
+
+[[vk::push_constant]]
+PushConstants g_push_constants;
+
+[[vk::binding(0, 0)]]
+cbuffer GlobalUniformBuffer {
   float4x4 v_mtx;   // The view matrix
   float4x4 p_mtx;   // The projection matrix
   float4x4 vp_mtx;  // The view-projection matrix
 };
 
-cbuffer CameraBuffer : register(b1, space0) {
+[[vk::binding(1, 0)]]
+cbuffer CameraBuffer {
   Camera cameras[MAX_CAMERAS];
 };
 
-cbuffer LightBuffer : register(b2, space0) {
+[[vk::binding(2, 0)]]
+cbuffer LightBuffer {
   Light lights[MAX_LIGHTS];
 };
 
-StructuredBuffer<Material> g_materials_buffer : register(t3, space0);
+[[vk::binding(3, 0)]]
+StructuredBuffer<Material> g_materials_buffer;
 
-cbuffer ObjectUniformBuffer : register(b0, space1) {
+[[vk::binding(0, 1)]]
+cbuffer ObjectUniformBuffer {
   float4x4 m_mtx;     // The model matrix
   float4x4 i_m_mtx;   // The inverse model matrix
   float4x4 mv_mtx;    // The model-view matrix
@@ -106,5 +118,8 @@ cbuffer ObjectUniformBuffer : register(b0, space1) {
   float4x4 mvp_mtx;   // The model-view-projection matrix
 };
 
-Texture2D<float4> g_textures[] : register(t0, space2);
-SamplerState g_samplers[] : register(s1, space2);
+[[vk::binding(0, 2)]]
+Texture2D<float4> g_textures[];
+
+[[vk::binding(1, 2)]]
+SamplerState g_samplers[];
