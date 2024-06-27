@@ -108,6 +108,7 @@ impl HalaApplication for SDFBakerApplication {
       width: self.config.window.width as u32,
       height: self.config.window.height as u32,
       version: (1, 3, 0),
+      require_srgb_surface: true,
       require_mesh_shader: false,
       require_ray_tracing: false,
       require_10bits_output: false,
