@@ -77,6 +77,7 @@ fn compile_shaders(shader_dir: &str, output_dir: &str, global_macros: &Vec<Strin
 
   let mut options = Vec::<String>::new();
   options.push("-spirv".to_string());
+  options.push("-fvk-use-dx-layout".to_string());
   options.push("-fspv-target-env=vulkan1.3".to_string());
   options.push("-fspv-reduce-load-size".to_string());
   options.push("-fspv-extension=KHR".to_string());

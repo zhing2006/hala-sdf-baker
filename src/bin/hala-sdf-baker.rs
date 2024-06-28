@@ -149,7 +149,7 @@ impl HalaApplication for SDFBakerApplication {
 
       let render_target = hala_gfx::HalaImage::new_2d(
         Rc::clone(&context.logical_device),
-        hala_gfx::HalaImageUsageFlags::COLOR_ATTACHMENT | hala_gfx::HalaImageUsageFlags::SAMPLED,
+        hala_gfx::HalaImageUsageFlags::DEPTH_STENCIL_ATTACHMENT | hala_gfx::HalaImageUsageFlags::SAMPLED,
         hala_gfx::HalaFormat::D32_SFLOAT,
         self.config.window.width as u32,
         self.config.window.height as u32,

@@ -1,0 +1,278 @@
+; SPIR-V
+; Version: 1.6
+; Generator: Google spiregg; 0
+; Bound: 32
+; Schema: 0
+               OpCapability Shader
+               OpCapability RuntimeDescriptorArray
+               OpExtension "SPV_EXT_descriptor_indexing"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %main "main" %out_var_SV_Target0 %g_materials
+               OpExecutionMode %main OriginUpperLeft
+          %4 = OpString "test.ps_6_8.hlsl"
+          %5 = OpString "./common.hlsl"
+          %6 = OpString "./test_common.hlsl"
+               OpSource HLSL 680 %4 "#include \"common.hlsl\"
+#include \"test_common.hlsl\"
+
+struct ps_out {
+  [[vk::location(0)]] float4 color: SV_Target0;
+};
+
+ps_out main(vs_to_ps input) {
+  ps_out output = (ps_out)0;
+  uint material_index = g_push_constants.material_index;
+  Material mtrl = g_materials[0];//material_index];
+  output.color = float4(mtrl.base_color, 1.0);
+  // if (mtrl.base_color_map_index != INVALID_INDEX) {
+  //   float3 base_color = g_textures[mtrl.base_color_map_index].Sample(g_samplers[mtrl.base_color_map_index], input.uv).xyz;
+  //   output.color = float4(base_color * input.color, 1.0);
+  // } else {
+  //   output.color = float4(mtrl.base_color * input.color, 1.0);
+  // }
+  return output;
+}"
+               OpSource HLSL 680 %5 "#define MAX_CAMERAS 8
+#define MAX_LIGHTS 16
+#define INVALID_INDEX 0xFFFFFFFF
+
+struct Camera {
+  float3 position;  // camera position
+  float3 right;     // camera right vector
+  float3 up;        // camera up vector
+  float3 forward;   // camera forward vector
+  float yfov;       // vertical field of view
+  float focal_distance_or_xmag; // focal distance for perspective camera and xmag for orthographic camera
+  float aperture_or_ymag; // aperture size for perspective camera and ymag for orthographic camera
+  uint type;      // 0 - perspective camera, 1 - orthographic camera
+};
+
+struct Light {
+  float3 intensity;
+  // For point light, position is the position.
+  // For directional light, position is unused.
+  // For spot light, quad light and sphere light, position is the position.
+  float3 position;
+  // For point light, u is unused.
+  // For directional light and spot light, u is the direction.
+  // For quad light, u is the right direction and length.
+  // For sphere light, u is unused.
+  float3 u;
+  // For point light, v is unused.
+  // For directional light, v.x is the cosine of the cone angle.
+  // For spot light, v.x is the cosine of the inner cone angle, v.y is the cosine of the outer cone angle.
+  // For quad light, v is the up direction and length.
+  // For sphere light, v is unused.
+  float3 v;
+  // For point light, directional light, spot light and quad light, radius is unused.
+  // For sphere light, radius is the radius.
+  float radius;
+  // For point light, directional light and spot light, area is unused.
+  // For quad light and sphere light, area is the area.
+  float area;
+  // light type: 0 - point, 1 - directional, 2 - spot, 3 - quad, 4 - sphere
+  int type;
+};
+
+struct Medium {
+  float3 color;
+  float density;
+  float anisotropy;
+  uint type;
+  float padding0;
+  float padding1;
+  // float padding[2];
+};
+
+struct Material {
+  Medium medium;
+
+  float3 base_color;
+  float opacity;
+
+  float3 emission;
+  float anisotropic;
+
+  float metallic;
+  float roughness;
+  float subsurface;
+  float specular_tint;
+
+  float sheen;
+  float sheen_tint;
+  float clearcoat;
+  float clearcoat_roughness;
+
+  float3 clearcoat_tint;
+  float specular_transmission;
+
+  float ior;
+  float ax;
+  float ay;
+  uint base_color_map_index;
+
+  uint normal_map_index;
+  uint metallic_roughness_map_index;
+  uint emission_map_index;
+  uint type;
+};
+
+struct PushConstants {
+  uint object_index;
+  uint material_index;
+};
+
+[[vk::push_constant]]
+PushConstants g_push_constants;
+
+[[vk::binding(0, 0)]]
+cbuffer GlobalUniformBuffer {
+  float4x4 v_mtx;   // The view matrix
+  float4x4 p_mtx;   // The projection matrix
+  float4x4 vp_mtx;  // The view-projection matrix
+};
+
+[[vk::binding(1, 0)]]
+cbuffer CameraBuffer {
+  Camera cameras[MAX_CAMERAS];
+};
+
+[[vk::binding(2, 0)]]
+cbuffer LightBuffer {
+  Light lights[MAX_LIGHTS];
+};
+
+[[vk::binding(0, 1)]]
+ConstantBuffer<Material> g_materials[];
+
+struct ObjectUniformBuffer {
+  float4x4 m_mtx;     // The model matrix
+  float4x4 i_m_mtx;   // The inverse model matrix
+  float4x4 mv_mtx;    // The model-view matrix
+  float4x4 t_mv_mtx;  // The transposed model-view matrix
+  float4x4 it_mv_mtx; // The inverse transposed model-view matrix
+  float4x4 mvp_mtx;   // The model-view-projection matrix
+};
+
+[[vk::binding(1, 1)]]
+ConstantBuffer<ObjectUniformBuffer> g_per_object_data[];
+
+[[vk::binding(0, 2)]]
+Texture2D<float4> g_textures[];
+
+[[vk::binding(1, 2)]]
+SamplerState g_samplers[];"
+               OpSource HLSL 680 %6 "struct vs_to_ps {
+  float4 position: SV_Position;
+  [[vk::location(0)]] float2 uv: TEXCOORD0;
+  [[vk::location(1)]] float3 color: COLOR0;
+};
+"
+               OpName %type_ConstantBuffer_Material "type.ConstantBuffer.Material"
+               OpMemberName %type_ConstantBuffer_Material 0 "medium"
+               OpMemberName %type_ConstantBuffer_Material 1 "base_color"
+               OpMemberName %type_ConstantBuffer_Material 2 "opacity"
+               OpMemberName %type_ConstantBuffer_Material 3 "emission"
+               OpMemberName %type_ConstantBuffer_Material 4 "anisotropic"
+               OpMemberName %type_ConstantBuffer_Material 5 "metallic"
+               OpMemberName %type_ConstantBuffer_Material 6 "roughness"
+               OpMemberName %type_ConstantBuffer_Material 7 "subsurface"
+               OpMemberName %type_ConstantBuffer_Material 8 "specular_tint"
+               OpMemberName %type_ConstantBuffer_Material 9 "sheen"
+               OpMemberName %type_ConstantBuffer_Material 10 "sheen_tint"
+               OpMemberName %type_ConstantBuffer_Material 11 "clearcoat"
+               OpMemberName %type_ConstantBuffer_Material 12 "clearcoat_roughness"
+               OpMemberName %type_ConstantBuffer_Material 13 "clearcoat_tint"
+               OpMemberName %type_ConstantBuffer_Material 14 "specular_transmission"
+               OpMemberName %type_ConstantBuffer_Material 15 "ior"
+               OpMemberName %type_ConstantBuffer_Material 16 "ax"
+               OpMemberName %type_ConstantBuffer_Material 17 "ay"
+               OpMemberName %type_ConstantBuffer_Material 18 "base_color_map_index"
+               OpMemberName %type_ConstantBuffer_Material 19 "normal_map_index"
+               OpMemberName %type_ConstantBuffer_Material 20 "metallic_roughness_map_index"
+               OpMemberName %type_ConstantBuffer_Material 21 "emission_map_index"
+               OpMemberName %type_ConstantBuffer_Material 22 "type"
+               OpName %Medium "Medium"
+               OpMemberName %Medium 0 "color"
+               OpMemberName %Medium 1 "density"
+               OpMemberName %Medium 2 "anisotropy"
+               OpMemberName %Medium 3 "type"
+               OpMemberName %Medium 4 "padding0"
+               OpMemberName %Medium 5 "padding1"
+               OpName %g_materials "g_materials"
+               OpName %out_var_SV_Target0 "out.var.SV_Target0"
+               OpName %main "main"
+               OpModuleProcessed "dxc-commit-hash: 4f4bb420"
+               OpModuleProcessed "dxc-cl-option: test.ps_6_8.hlsl -E main -T ps_6_8 -spirv -fspv-target-env=vulkan1.3 -fspv-reduce-load-size -fspv-extension=KHR -fspv-extension=SPV_EXT_descriptor_indexing -Od -Zi -WX -Qembed_debug"
+               OpDecorate %out_var_SV_Target0 Location 0
+               OpDecorate %g_materials DescriptorSet 1
+               OpDecorate %g_materials Binding 0
+               OpMemberDecorate %Medium 0 Offset 0
+               OpMemberDecorate %Medium 1 Offset 12
+               OpMemberDecorate %Medium 2 Offset 16
+               OpMemberDecorate %Medium 3 Offset 20
+               OpMemberDecorate %Medium 4 Offset 24
+               OpMemberDecorate %Medium 5 Offset 28
+               OpMemberDecorate %type_ConstantBuffer_Material 0 Offset 0
+               OpMemberDecorate %type_ConstantBuffer_Material 1 Offset 32
+               OpMemberDecorate %type_ConstantBuffer_Material 2 Offset 44
+               OpMemberDecorate %type_ConstantBuffer_Material 3 Offset 48
+               OpMemberDecorate %type_ConstantBuffer_Material 4 Offset 60
+               OpMemberDecorate %type_ConstantBuffer_Material 5 Offset 64
+               OpMemberDecorate %type_ConstantBuffer_Material 6 Offset 68
+               OpMemberDecorate %type_ConstantBuffer_Material 7 Offset 72
+               OpMemberDecorate %type_ConstantBuffer_Material 8 Offset 76
+               OpMemberDecorate %type_ConstantBuffer_Material 9 Offset 80
+               OpMemberDecorate %type_ConstantBuffer_Material 10 Offset 84
+               OpMemberDecorate %type_ConstantBuffer_Material 11 Offset 88
+               OpMemberDecorate %type_ConstantBuffer_Material 12 Offset 92
+               OpMemberDecorate %type_ConstantBuffer_Material 13 Offset 96
+               OpMemberDecorate %type_ConstantBuffer_Material 14 Offset 108
+               OpMemberDecorate %type_ConstantBuffer_Material 15 Offset 112
+               OpMemberDecorate %type_ConstantBuffer_Material 16 Offset 116
+               OpMemberDecorate %type_ConstantBuffer_Material 17 Offset 120
+               OpMemberDecorate %type_ConstantBuffer_Material 18 Offset 124
+               OpMemberDecorate %type_ConstantBuffer_Material 19 Offset 128
+               OpMemberDecorate %type_ConstantBuffer_Material 20 Offset 132
+               OpMemberDecorate %type_ConstantBuffer_Material 21 Offset 136
+               OpMemberDecorate %type_ConstantBuffer_Material 22 Offset 140
+               OpDecorate %type_ConstantBuffer_Material Block
+      %float = OpTypeFloat 32
+    %v4float = OpTypeVector %float 4
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %float_1 = OpConstant %float 1
+       %uint = OpTypeInt 32 0
+    %v3float = OpTypeVector %float 3
+     %Medium = OpTypeStruct %v3float %float %float %uint %float %float
+%type_ConstantBuffer_Material = OpTypeStruct %Medium %v3float %float %v3float %float %float %float %float %float %float %float %float %float %v3float %float %float %float %float %uint %uint %uint %uint %uint
+%_runtimearr_type_ConstantBuffer_Material = OpTypeRuntimeArray %type_ConstantBuffer_Material
+%_ptr_Uniform__runtimearr_type_ConstantBuffer_Material = OpTypePointer Uniform %_runtimearr_type_ConstantBuffer_Material
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+       %void = OpTypeVoid
+         %20 = OpTypeFunction %void
+%_ptr_Uniform_type_ConstantBuffer_Material = OpTypePointer Uniform %type_ConstantBuffer_Material
+%g_materials = OpVariable %_ptr_Uniform__runtimearr_type_ConstantBuffer_Material Uniform
+%out_var_SV_Target0 = OpVariable %_ptr_Output_v4float Output
+%_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
+     %uint_1 = OpConstant %uint 1
+               OpLine %4 8 1
+       %main = OpFunction %void None %20
+               OpNoLine
+         %24 = OpLabel
+               OpLine %4 11 19
+         %25 = OpAccessChain %_ptr_Uniform_type_ConstantBuffer_Material %g_materials %int_0
+               OpNoLine
+         %26 = OpAccessChain %_ptr_Uniform_v3float %25 %uint_1
+         %27 = OpLoad %v3float %26
+               OpLine %4 12 24
+         %28 = OpCompositeExtract %float %27 0
+         %29 = OpCompositeExtract %float %27 1
+         %30 = OpCompositeExtract %float %27 2
+         %31 = OpCompositeConstruct %v4float %28 %29 %30 %float_1
+               OpLine %4 8 1
+               OpStore %out_var_SV_Target0 %31
+               OpLine %4 20 1
+               OpReturn
+               OpFunctionEnd
+

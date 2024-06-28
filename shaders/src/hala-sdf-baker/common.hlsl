@@ -45,12 +45,14 @@ struct Medium {
   float density;
   float anisotropy;
   uint type;
-  float padding[2];
+  float padding0;
+  float padding1;
 };
 
 struct Material {
   Medium medium;
 
+  [[vk::offset(32)]]
   float3 base_color;
   float opacity;
 
@@ -106,8 +108,8 @@ cbuffer LightBuffer {
   Light lights[MAX_LIGHTS];
 };
 
-[[vk::binding(3, 0)]]
-StructuredBuffer<Material> g_materials_buffer;
+[[vk::binding(0, 1)]]
+ConstantBuffer<Material> g_materials[];
 
 struct ObjectUniformBuffer {
   float4x4 m_mtx;     // The model matrix
@@ -118,7 +120,7 @@ struct ObjectUniformBuffer {
   float4x4 mvp_mtx;   // The model-view-projection matrix
 };
 
-[[vk::binding(0, 1)]]
+[[vk::binding(1, 1)]]
 ConstantBuffer<ObjectUniformBuffer> g_per_object_data[];
 
 [[vk::binding(0, 2)]]

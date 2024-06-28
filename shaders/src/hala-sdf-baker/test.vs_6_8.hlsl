@@ -11,12 +11,11 @@ struct vs_in {
 vs_to_ps main(vs_in input) {
   vs_to_ps output = (vs_to_ps)0;
 
-  const float4x4 mvp_mtx = g_per_object_data[g_push_constants.object_index].mvp_mtx;
-  const float4x4 i_m_mtx = g_per_object_data[g_push_constants.object_index].i_m_mtx;
+  const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
-  output.position = mul(mvp_mtx, float4(input.position.xyz, 1.0));
+  output.position = mul(per_object_data.mvp_mtx, float4(input.position.xyz, 1.0));
   output.uv = input.uv.xy;
-  const float3 normal = normalize(mul(float4(input.normal.xyz, 0.0), i_m_mtx).xyz);
+  const float3 normal = normalize(mul(float4(input.normal.xyz, 0.0), per_object_data.i_m_mtx).xyz);
   output.color = normal.xyz * 0.5 + 0.5;
 
   // printf("normal: %f %f %f\n", normal.x, normal.y, normal.z);
