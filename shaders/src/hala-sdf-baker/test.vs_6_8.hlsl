@@ -15,8 +15,8 @@ vs_to_ps main(vs_in input) {
 
   output.position = mul(per_object_data.mvp_mtx, float4(input.position.xyz, 1.0));
   output.uv = input.uv.xy;
-  const float3 normal = normalize(mul(float4(input.normal.xyz, 0.0), per_object_data.i_m_mtx).xyz);
-  output.color = normal.xyz * 0.5 + 0.5;
+  output.normal = normalize(mul(float4(input.normal.xyz, 0.0), per_object_data.i_m_mtx).xyz);
+  output.tangent = normalize(mul(float4(input.tangent.xyz, 0.0), per_object_data.i_m_mtx).xyz);
 
   // printf("normal: %f %f %f\n", normal.x, normal.y, normal.z);
 
