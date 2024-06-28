@@ -7,14 +7,16 @@ struct ps_out {
 
 ps_out main(vs_to_ps input) {
   ps_out output = (ps_out)0;
+
   uint material_index = g_push_constants.material_index;
-  Material mtrl = g_materials[0];//material_index];
-  output.color = float4(mtrl.base_color, 1.0);
-  // if (mtrl.base_color_map_index != INVALID_INDEX) {
-  //   float3 base_color = g_textures[mtrl.base_color_map_index].Sample(g_samplers[mtrl.base_color_map_index], input.uv).xyz;
-  //   output.color = float4(base_color * input.color, 1.0);
-  // } else {
-  //   output.color = float4(mtrl.base_color * input.color, 1.0);
-  // }
+  Material mtrl = g_materials[material_index];
+
+  if (mtrl.base_color_map_index != INVALID_INDEX) {
+    float3 base_color = g_textures[mtrl.base_color_map_index].Sample(g_samplers[mtrl.base_color_map_index], input.uv).xyz;
+    output.color = float4(base_color * input.color, 1.0);
+  } else {
+    output.color = float4(mtrl.base_color * input.color, 1.0);
+  }
+
   return output;
 }
