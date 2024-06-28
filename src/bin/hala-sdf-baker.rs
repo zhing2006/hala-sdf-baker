@@ -13,7 +13,8 @@ use hala_imgui::{
 };
 
 use hala_renderer::{
-  renderer,
+  renderer::HalaRendererTrait,
+  rz_renderer::HalaRenderer,
   scene,
 };
 
@@ -23,7 +24,7 @@ use hala_sdf_baker::config;
 struct SDFBakerApplication {
   log_file: String,
   config: config::AppConfig,
-  renderer: Option<renderer::HalaRenderer>,
+  renderer: Option<HalaRenderer>,
   imgui: Option<HalaImGui>,
 
   color_render_target: Option<hala_gfx::HalaImage>,
@@ -125,14 +126,14 @@ impl HalaApplication for SDFBakerApplication {
       ..Default::default()
     };
 
-    let mut renderer = renderer::HalaRenderer::new(
+    let mut renderer = HalaRenderer::new(
       "SDF Baker",
       &gpu_req,
       window,
     )?;
 
     {
-      let context = renderer.context.borrow();
+      let context = renderer.resources().context.borrow();
 
       let render_target = hala_gfx::HalaImage::new_2d(
         Rc::clone(&context.logical_device),
@@ -177,7 +178,7 @@ impl HalaApplication for SDFBakerApplication {
     renderer.commit()?;
 
     self.imgui = Some(HalaImGui::new(
-      std::rc::Rc::clone(&(*renderer.context)),
+      std::rc::Rc::clone(&(*renderer.resources().context)),
       false,
     )?);
 
