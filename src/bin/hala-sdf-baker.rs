@@ -31,6 +31,15 @@ struct SDFBakerApplication {
   depth_render_target: Option<hala_gfx::HalaImage>,
 }
 
+impl Drop for SDFBakerApplication {
+  fn drop(&mut self) {
+    self.color_render_target = None;
+    self.depth_render_target = None;
+    self.imgui = None;
+    self.renderer = None;
+  }
+}
+
 /// The implementation of the SDF baker application.
 impl SDFBakerApplication {
 
@@ -118,7 +127,7 @@ impl HalaApplication for SDFBakerApplication {
       height: self.config.window.height as u32,
       version: (1, 3, 0),
       require_srgb_surface: true,
-      require_mesh_shader: false,
+      require_mesh_shader: true,
       require_ray_tracing: false,
       require_10bits_output: false,
       is_low_latency: true,
@@ -167,8 +176,14 @@ impl HalaApplication for SDFBakerApplication {
     } else {
       format!("shaders/output/release/hala-sdf-baker/{}", features.join("#"))
     };
-    renderer.push_traditional_shaders_with_file(
-      &format!("{}/test.vs_6_8.spv", shaders_dir),
+    // renderer.push_traditional_shaders_with_file(
+    //   &format!("{}/test.vs_6_8.spv", shaders_dir),
+    //   &format!("{}/test.ps_6_8.spv", shaders_dir),
+    //   "test",
+    // )?;
+    renderer.push_shaders_with_file(
+      Some(&format!("{}/test.as_6_8.spv", shaders_dir)),
+      &format!("{}/test.ms_6_8.spv", shaders_dir),
       &format!("{}/test.ps_6_8.spv", shaders_dir),
       "test",
     )?;
