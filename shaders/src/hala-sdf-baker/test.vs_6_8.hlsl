@@ -8,8 +8,8 @@ struct vs_in {
   [[vk::location(3)]] float4 uv: TEXCOORD0;
 };
 
-vs_to_ps main(vs_in input) {
-  vs_to_ps output = (vs_to_ps)0;
+to_ps main(vs_in input) {
+  to_ps output = (to_ps)0;
 
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 

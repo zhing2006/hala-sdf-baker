@@ -5,7 +5,7 @@ struct ps_out {
   [[vk::location(0)]] float4 color: SV_Target0;
 };
 
-ps_out main(vs_to_ps input) {
+ps_out main(to_ps input) {
   ps_out output = (ps_out)0;
 
   uint material_index = g_push_constants.material_index;

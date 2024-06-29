@@ -121,13 +121,20 @@ fn compile_shaders(shader_dir: &str, output_dir: &str, global_macros: &Vec<Strin
       continue;
     }
 
+    // Add options for specific shader kinds.
+    let mut this_options = Vec::new();
+    this_options.extend(options.iter().cloned());
+    if shader_kind.starts_with("ms") || shader_kind.starts_with("as") {
+      this_options.push("-fspv-extension=SPV_EXT_mesh_shader".to_string());
+    }
+
     let ir = compile_hlsl(
       hlsl_file.to_str().unwrap(),
       &fs::read_to_string(&hlsl_file).unwrap(),
       "main",
       shader_kind,
-      // Convert options to &[&str].
-      &options.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
+      // Convert this_options to &[&str].
+      &this_options.iter().map(|s| s.as_str()).collect::<Vec<_>>(),
       // Convert defines to &[(&str, Option<&str>)].
       &defines.iter().map(|(k, v)| (k.as_str(), v.as_ref().map(|v| v.as_str()))).collect::<Vec<_>>(),
     ).unwrap();
