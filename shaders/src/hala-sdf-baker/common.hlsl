@@ -86,6 +86,7 @@ struct Material {
 struct PushConstants {
   uint object_index;
   uint material_index;
+  uint primitive_index;
 };
 
 [[vk::push_constant]]
@@ -122,6 +123,26 @@ struct ObjectUniformBuffer {
 
 [[vk::binding(1, 1)]]
 ConstantBuffer<ObjectUniformBuffer> g_per_object_data[];
+
+struct Vertex {
+  float position_x;
+  float position_y;
+  float position_z;
+  float normal_x;
+  float normal_y;
+  float normal_z;
+  float tangent_x;
+  float tangent_y;
+  float tangent_z;
+  float tex_coord_x;
+  float tex_coord_y;
+};
+
+[[vk::binding(2, 1)]]
+StructuredBuffer<Vertex> g_vertices[];
+
+[[vk::binding(3, 1)]]
+StructuredBuffer<uint> g_indices[];
 
 [[vk::binding(0, 2)]]
 Texture2D<float4> g_textures[];
