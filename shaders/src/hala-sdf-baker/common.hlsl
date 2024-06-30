@@ -145,6 +145,31 @@ StructuredBuffer<Vertex> g_vertices[];
 [[vk::binding(3, 1)]]
 StructuredBuffer<uint> g_indices[];
 
+struct Meshlet {
+  float4 bound_sphere;  // center, radius
+  [[vk::offset(16)]]
+  float3 cone_apex;
+  [[vk::offset(28)]]
+  uint num_of_vertices;
+  [[vk::offset(32)]]
+  float3 cone_axis;
+  [[vk::offset(44)]]
+  uint num_of_primitives;
+  [[vk::offset(48)]]
+  uint offset_of_vertices;
+  [[vk::offset(52)]]
+  uint offset_of_primitives;
+};
+
+[[vk::binding(4, 1)]]
+StructuredBuffer<Meshlet> g_meshlets[];
+
+[[vk::binding(5, 1)]]
+StructuredBuffer<uint> g_unique_vertices[];
+
+[[vk::binding(6, 1)]]
+ByteAddressBuffer g_unique_primitives[];
+
 [[vk::binding(0, 2)]]
 Texture2D<float4> g_textures[];
 

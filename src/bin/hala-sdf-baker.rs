@@ -176,17 +176,20 @@ impl HalaApplication for SDFBakerApplication {
     } else {
       format!("shaders/output/release/hala-sdf-baker/{}", features.join("#"))
     };
-    // renderer.push_traditional_shaders_with_file(
-    //   &format!("{}/test.vs_6_8.spv", shaders_dir),
-    //   &format!("{}/test.ps_6_8.spv", shaders_dir),
-    //   "test",
-    // )?;
-    renderer.push_shaders_with_file(
-      Some(&format!("{}/test.as_6_8.spv", shaders_dir)),
-      &format!("{}/test.ms_6_8.spv", shaders_dir),
-      &format!("{}/test.ps_6_8.spv", shaders_dir),
-      "test",
-    )?;
+    if gpu_req.require_mesh_shader {
+      renderer.push_shaders_with_file(
+        Some(&format!("{}/test.as_6_8.spv", shaders_dir)),
+        &format!("{}/test.ms_6_8.spv", shaders_dir),
+        &format!("{}/test.ps_6_8.spv", shaders_dir),
+        "test",
+      )?;
+    } else {
+      renderer.push_traditional_shaders_with_file(
+        &format!("{}/test.vs_6_8.spv", shaders_dir),
+        &format!("{}/test.ps_6_8.spv", shaders_dir),
+        "test",
+      )?;
+    }
 
     renderer.set_scene(&mut scene)?;
 
