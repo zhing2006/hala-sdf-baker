@@ -15,7 +15,7 @@ void main(
   in payload MeshShaderPayLoad ms_payload,
   uint3 dispatchThreadID : SV_DispatchThreadID
 ) {
-  const float3 offset = float3(0.0f, 0.0f, (float)ms_payload.meshlet_index);
+  const float3 offset = float3(0.0f, 0.0f, (float)dispatchThreadID.x);
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
   SetMeshOutputCounts(3, 1);

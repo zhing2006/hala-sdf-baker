@@ -87,6 +87,7 @@ struct PushConstants {
   uint object_index;
   uint material_index;
   uint primitive_index;
+  uint meshlet_count;
 };
 
 [[vk::push_constant]]
@@ -151,5 +152,5 @@ Texture2D<float4> g_textures[];
 SamplerState g_samplers[];
 
 struct MeshShaderPayLoad {
-  uint meshlet_index;
+  uint dummy;
 };
