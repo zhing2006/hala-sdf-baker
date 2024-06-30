@@ -12,9 +12,10 @@ static const float3 positions[3] = {
 void main(
   out indices uint3 triangles[1],
   out vertices to_ps vertices[3],
+  in payload MeshShaderPayLoad ms_payload,
   uint3 dispatchThreadID : SV_DispatchThreadID
 ) {
-  const float3 offset = float3(0.0f, 0.0f, (float)dispatchThreadID);
+  const float3 offset = float3(0.0f, 0.0f, (float)ms_payload.meshlet_index);
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
   SetMeshOutputCounts(3, 1);

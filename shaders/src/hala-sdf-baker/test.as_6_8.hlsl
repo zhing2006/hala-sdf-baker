@@ -1,14 +1,11 @@
 #include "common.hlsl"
 #include "test_common.hlsl"
 
-struct DummyPayLoad {
-  uint dummy;
-};
-
 // We don't use pay loads in this sample, but the fn call requires one.
-groupshared DummyPayLoad dummyPayload;
+groupshared MeshShaderPayLoad ms_payload;
 
 [numthreads(1, 1, 1)]
-void main() {
-  DispatchMesh(3, 1, 1, dummyPayload);
+void main(uint3 dispatchThreadID : SV_DispatchThreadID) {
+  ms_payload.meshlet_index = dispatchThreadID.x;
+  DispatchMesh(1, 1, 1, ms_payload);
 }

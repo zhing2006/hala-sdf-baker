@@ -114,7 +114,7 @@ impl HalaApplication for SDFBakerApplication {
   /// return: The result.
   fn before_run(&mut self, _width: u32, _height: u32, window: &winit::window::Window) -> Result<()> {
     let now = std::time::Instant::now();
-    let scene = scene::cpu::HalaScene::new(&self.config.scene_file)?;
+    let mut scene = scene::cpu::HalaScene::new(&self.config.scene_file)?;
     log::info!("Load scene used {}ms.", now.elapsed().as_millis());
 
      // Setup features.
@@ -188,7 +188,7 @@ impl HalaApplication for SDFBakerApplication {
       "test",
     )?;
 
-    renderer.set_scene(&scene)?;
+    renderer.set_scene(&mut scene)?;
 
     renderer.commit()?;
 

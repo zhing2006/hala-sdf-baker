@@ -149,3 +149,7 @@ Texture2D<float4> g_textures[];
 
 [[vk::binding(1, 2)]]
 SamplerState g_samplers[];
+
+struct MeshShaderPayLoad {
+  uint meshlet_index;
+};
