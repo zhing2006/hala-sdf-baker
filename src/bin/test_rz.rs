@@ -1,10 +1,7 @@
-use std::rc::Rc;
-
 use anyhow::{
   Result,
   Context,
 };
-
 
 use hala_imgui::{
   HalaApplication,
@@ -25,15 +22,10 @@ struct RasterizationRendererApplication {
   config: config::AppConfig,
   renderer: Option<HalaRenderer>,
   imgui: Option<HalaImGui>,
-
-  color_render_target: Option<hala_gfx::HalaImage>,
-  depth_render_target: Option<hala_gfx::HalaImage>,
 }
 
 impl Drop for RasterizationRendererApplication {
   fn drop(&mut self) {
-    self.color_render_target = None;
-    self.depth_render_target = None;
     self.imgui = None;
     self.renderer = None;
   }
@@ -60,9 +52,6 @@ impl RasterizationRendererApplication {
       config,
       renderer: None,
       imgui: None,
-
-      color_render_target: None,
-      depth_render_target: None,
     })
   }
 
@@ -132,36 +121,6 @@ impl HalaApplication for RasterizationRendererApplication {
       window,
     )?;
 
-    {
-      let context = renderer.resources().context.borrow();
-
-      let render_target = hala_gfx::HalaImage::new_2d(
-        Rc::clone(&context.logical_device),
-        hala_gfx::HalaImageUsageFlags::COLOR_ATTACHMENT | hala_gfx::HalaImageUsageFlags::SAMPLED,
-        hala_gfx::HalaFormat::R16G16B16A16_SFLOAT,
-        self.config.window.width as u32,
-        self.config.window.height as u32,
-        1,
-        1,
-        hala_gfx::HalaMemoryLocation::GpuOnly,
-        "custom_color.render_target",
-      )?;
-      self.color_render_target = Some(render_target);
-
-      let render_target = hala_gfx::HalaImage::new_2d(
-        Rc::clone(&context.logical_device),
-        hala_gfx::HalaImageUsageFlags::DEPTH_STENCIL_ATTACHMENT | hala_gfx::HalaImageUsageFlags::SAMPLED,
-        hala_gfx::HalaFormat::D32_SFLOAT,
-        self.config.window.width as u32,
-        self.config.window.height as u32,
-        1,
-        1,
-        hala_gfx::HalaMemoryLocation::GpuOnly,
-        "custom_depth.render_target",
-      )?;
-      self.depth_render_target = Some(render_target);
-    }
-
     let shaders_dir = if cfg!(debug_assertions) {
       "shaders/output/debug/test"
     } else {
@@ -200,8 +159,6 @@ impl HalaApplication for RasterizationRendererApplication {
   fn after_run(&mut self) {
     if let Some(renderer) = &mut self.renderer.take() {
       renderer.wait_idle().expect("Failed to wait the renderer idle.");
-      self.depth_render_target = None;
-      self.color_render_target = None;
       self.imgui = None;
     }
   }
