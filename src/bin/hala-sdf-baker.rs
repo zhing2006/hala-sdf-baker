@@ -127,12 +127,12 @@ impl HalaApplication for SDFBakerApplication {
       height: self.config.window.height as u32,
       version: (1, 3, 0),
       require_srgb_surface: true,
-      require_mesh_shader: false,
+      require_mesh_shader: true,
       require_ray_tracing: false,
       require_10bits_output: false,
       is_low_latency: true,
       require_depth: true,
-      require_printf_in_shader: false,
+      require_printf_in_shader: cfg!(debug_assertions),
       ..Default::default()
     };
 
