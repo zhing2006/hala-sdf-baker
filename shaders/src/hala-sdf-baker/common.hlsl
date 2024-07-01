@@ -1,6 +1,7 @@
 #define MAX_CAMERAS 8
 #define MAX_LIGHTS 16
 #define INVALID_INDEX 0xFFFFFFFF
+#define DIV_UP(a, b) (((a) + (b) - 1) / (b))
 
 struct Camera {
   float3 position;  // camera position
@@ -147,21 +148,13 @@ StructuredBuffer<uint> g_indices[];
 
 struct Meshlet {
   float4 bound_sphere;  // center, radius
-  [[vk::offset(16)]]
   float3 cone_apex;
-  [[vk::offset(28)]]
   uint num_of_vertices;
-  [[vk::offset(32)]]
   float3 cone_axis;
-  [[vk::offset(44)]]
   uint num_of_primitives;
-  [[vk::offset(48)]]
   uint offset_of_vertices;
-  [[vk::offset(52)]]
   uint offset_of_primitives;
-  [[vk::offset(56)]]
   float padding0;
-  [[vk::offset(60)]]
   float padding1;
 };
 
