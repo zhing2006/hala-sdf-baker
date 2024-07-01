@@ -16,6 +16,7 @@ void main(
   uint3 dispatchThreadID : SV_DispatchThreadID
 ) {
   const uint meshlet_index = dispatchThreadID.x;
+  // printf("meshlet_index: %d\n", meshlet_index);
 
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
@@ -24,7 +25,18 @@ void main(
   StructuredBuffer<uint> vertex_index_buffer = g_unique_vertices[g_push_constants.primitive_index];
   ByteAddressBuffer primitive_index_buffer = g_unique_primitives[g_push_constants.primitive_index];
 
+  // {
+  //   const Meshlet meshlet = meshlet_buffer[0];
+  //   printf("offset_of_vertices: %d offset_of_primitives: %d num_of_vertices: %d num_of_primitives: %d\n", meshlet.offset_of_vertices, meshlet.offset_of_primitives, meshlet.num_of_vertices, meshlet.num_of_primitives);
+  // }
+
+  // {
+  //   const Meshlet meshlet = meshlet_buffer[1];
+  //   printf("offset_of_vertices: %d offset_of_primitives: %d num_of_vertices: %d num_of_primitives: %d\n", meshlet.offset_of_vertices, meshlet.offset_of_primitives, meshlet.num_of_vertices, meshlet.num_of_primitives);
+  // }
+
   const Meshlet meshlet = meshlet_buffer[meshlet_index];
+
   SetMeshOutputCounts(meshlet.num_of_vertices, meshlet.num_of_primitives);
 
   for (uint i = 0; i < meshlet.num_of_vertices; i++) {
@@ -42,37 +54,11 @@ void main(
   }
 
   for (uint i = 0; i < meshlet.num_of_primitives; i++) {
-    const uint primitive_index = primitive_index_buffer.Load(meshlet.offset_of_primitives + i);
-    triangles[i] = uint3(
-      (primitive_index & 0xFF),
-      (primitive_index & 0xFF00) >> 8,
-      (primitive_index & 0xFF0000) >> 16
-    );
+    const uint primitive_index = primitive_index_buffer.Load((meshlet.offset_of_primitives + i) * 4);
+    const uint triangle_index0 = (primitive_index & 0xFF);
+    const uint triangle_index1 = (primitive_index & 0xFF00) >> 8;
+    const uint triangle_index2 = (primitive_index & 0xFF0000) >> 16;
+    // printf("Triangle No: %d [%d, %d, %d]\n", i, triangle_index0, triangle_index1, triangle_index2);
+    triangles[i] = uint3(triangle_index0, triangle_index1, triangle_index2);
   }
-
-  // const float3 offset = float3(0.0f, 0.0f, (float)dispatchThreadID.x * 0.1);
-
-  // SetMeshOutputCounts(3, 1);
-  // for (uint i = 0; i < 3; i++) {
-  //   const uint vertex_index = vertex_index_buffer[meshlet.offset_of_vertices + i];
-  //   const Vertex vertex = vertex_buffer[vertex_index];
-  //   const float3 position = float3(vertex.position_x, vertex.position_y, vertex.position_z);
-  //   const float2 uv = float2(vertex.tex_coord_x, vertex.tex_coord_y);
-  //   const float3 normal = normalize(float3(vertex.normal_x, vertex.normal_y, vertex.normal_z));
-  //   const float3 tangent = normalize(float3(vertex.tangent_x, vertex.tangent_y, vertex.tangent_z));
-
-  //   vertices[i].position = mul(per_object_data.mvp_mtx, float4(position, 1.0));
-  //   vertices[i].uv = float2(0.0f, 0.0f);
-  //   vertices[i].normal = float3(0.0f, 0.0f, 1.0f);
-  //   vertices[i].tangent = float3(1.0f, 0.0f, 0.0f);
-  // }
-
-  // for (uint i = 0; i < 1; i++) {
-  //   const uint primitive_index = primitive_index_buffer.Load(i);
-  //   triangles[i] = uint3(
-  //     (primitive_index & 0xFF),
-  //     (primitive_index & 0xFF00) >> 8,
-  //     (primitive_index & 0xFF0000) >> 16
-  //   );
-  // }
 }

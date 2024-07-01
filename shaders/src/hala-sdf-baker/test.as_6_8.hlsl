@@ -6,5 +6,5 @@ groupshared MeshShaderPayLoad ms_payload;
 
 [numthreads(1, 1, 1)]
 void main(uint3 dispatchThreadID : SV_DispatchThreadID) {
-  DispatchMesh(1/*g_push_constants.meshlet_count*/, 1, 1, ms_payload);
+  DispatchMesh(g_push_constants.meshlet_count, 1, 1, ms_payload);
 }

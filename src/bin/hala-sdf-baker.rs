@@ -132,6 +132,7 @@ impl HalaApplication for SDFBakerApplication {
       require_10bits_output: false,
       is_low_latency: true,
       require_depth: true,
+      require_printf_in_shader: true,
       ..Default::default()
     };
 

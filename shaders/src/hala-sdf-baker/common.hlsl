@@ -159,6 +159,10 @@ struct Meshlet {
   uint offset_of_vertices;
   [[vk::offset(52)]]
   uint offset_of_primitives;
+  [[vk::offset(56)]]
+  float padding0;
+  [[vk::offset(60)]]
+  float padding1;
 };
 
 [[vk::binding(4, 1)]]
