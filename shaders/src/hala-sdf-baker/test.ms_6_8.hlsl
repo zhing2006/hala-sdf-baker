@@ -3,7 +3,6 @@
 
 #define MAX_VERTEX_COUNT 64
 #define MAX_TRIANGLE_COUNT 124
-#define MESH_SHADER_GROUP_SIZE 64
 #define VERTICES_PER_THREAD DIV_UP(MAX_VERTEX_COUNT, MESH_SHADER_GROUP_SIZE)
 #define TRIANGLE_PER_THREAD DIV_UP(MAX_TRIANGLE_COUNT, MESH_SHADER_GROUP_SIZE)
 
@@ -21,14 +20,14 @@ void main(
   out indices uint3 triangles[MAX_TRIANGLE_COUNT],
   out vertices to_ps vertices[MAX_VERTEX_COUNT],
   in payload MeshShaderPayLoad ms_payload,
-  uint3 groupId : SV_GroupID,
-  uint3 groupThreadId : SV_GroupThreadID
+  uint3 group_id : SV_GroupID,
+  uint3 group_thread_id : SV_GroupThreadID
 ) {
   // One meshlet per group.
-  const uint meshlet_index = groupId.x;
+  const uint meshlet_index = ms_payload.task_group_id * TASK_SHADER_GROUP_SIZE + group_id.x;
   // printf("[MESH SHADER] meshlet_index: %d\n", meshlet_index);
   // printf("[MESH SHADER] VERTEX_PER_THREAD: %d TRIANGLE_PER_THREAD: %d\n", VERTICES_PER_THREAD, TRIANGLE_PER_THREAD);
-  // printf("[MESH SHADER] groupThreadId: %d\n", groupThreadId.x);
+  // printf("[MESH SHADER] group_thread_id: %d\n", group_thread_id.x);
 
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
@@ -42,7 +41,7 @@ void main(
   SetMeshOutputCounts(meshlet.num_of_vertices, meshlet.num_of_primitives);
 
   // Per thread write one vertex.
-  const uint vertex_id = groupThreadId.x;
+  const uint vertex_id = group_thread_id.x;
   if (vertex_id < min(meshlet.num_of_vertices, MAX_VERTEX_COUNT)) {
     const uint vertex_index = vertex_index_buffer[meshlet.offset_of_vertices + vertex_id];
     const Vertex vertex = vertex_buffer[vertex_index];
@@ -58,7 +57,7 @@ void main(
   }
 
   // Per thread write two triangles.
-  uint triangle_id = groupThreadId.x * 2;
+  uint triangle_id = group_thread_id.x * 2;
   if (triangle_id < min(meshlet.num_of_primitives, MAX_TRIANGLE_COUNT)) {
     triangles[triangle_id] = load_primitive_index(primitive_index_buffer, meshlet.offset_of_primitives + triangle_id);
     triangle_id++;

@@ -89,6 +89,7 @@ struct PushConstants {
   uint material_index;
   uint primitive_index;
   uint meshlet_count;
+  uint dispatch_size_x;
 };
 
 [[vk::push_constant]]
@@ -96,9 +97,9 @@ PushConstants g_push_constants;
 
 [[vk::binding(0, 0)]]
 cbuffer GlobalUniformBuffer {
-  float4x4 v_mtx;   // The view matrix
-  float4x4 p_mtx;   // The projection matrix
-  float4x4 vp_mtx;  // The view-projection matrix
+  float4x4 v_mtx;       // The view matrix
+  float4x4 p_mtx;       // The projection matrix
+  float4x4 vp_mtx;      // The view-projection matrix
 };
 
 [[vk::binding(1, 0)]]
@@ -174,5 +175,5 @@ Texture2D<float4> g_textures[];
 SamplerState g_samplers[];
 
 struct MeshShaderPayLoad {
-  uint dummy;
+  uint task_group_id;
 };
