@@ -5,6 +5,11 @@ edition = "2021"
 description = "The mesh to SDF baker."
 
 [[bin]]
+name = "test_rz"
+test = false
+bench = false
+
+[[bin]]
 name = "hala-sdf-baker"
 test = false
 bench = false

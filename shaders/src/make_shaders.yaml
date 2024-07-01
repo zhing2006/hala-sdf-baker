@@ -5,3 +5,6 @@ projects:
       - - SDF_BAKER
       - - SDF_BAKER
         - CONSERVATIVE_RASTERIZATION
+  - name: test
+    global_macros:
+    optional_macro_combinations:

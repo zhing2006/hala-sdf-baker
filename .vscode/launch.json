@@ -37,5 +37,21 @@
             "console": "integratedTerminal",
             "preLaunchTask": "rust: cargo build"
         },
+        {
+            "name": "Win Debug test_rz",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/test_rz",
+            "environment": [
+                {
+                    "name": "RUST_BACKTRACE",
+                    "value": "0"
+                }
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "preLaunchTask": "rust: cargo build"
+        },
     ]
 }
