@@ -29,6 +29,13 @@ void main(
   // printf("[MESH SHADER] VERTEX_PER_THREAD: %d TRIANGLE_PER_THREAD: %d\n", VERTICES_PER_THREAD, TRIANGLE_PER_THREAD);
   // printf("[MESH SHADER] group_thread_id: %d\n", group_thread_id.x);
 
+  const bool is_visible = ms_payload.is_visibles[group_id.x % TASK_SHADER_GROUP_SIZE];
+  if (!is_visible) {
+    // printf("[MESH SHADER] meshlet_index: %d is not visible\n", meshlet_index);
+    SetMeshOutputCounts(0, 0);
+    return;
+  }
+
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
   StructuredBuffer<Meshlet> meshlet_buffer = g_meshlets[g_push_constants.primitive_index];
@@ -47,13 +54,13 @@ void main(
     const Vertex vertex = vertex_buffer[vertex_index];
     const float3 position = float3(vertex.position_x, vertex.position_y, vertex.position_z);
     const float2 uv = float2(vertex.tex_coord_x, vertex.tex_coord_y);
-    const float3 normal = normalize(float3(vertex.normal_x, vertex.normal_y, vertex.normal_z));
-    const float3 tangent = normalize(float3(vertex.tangent_x, vertex.tangent_y, vertex.tangent_z));
+    const float3 normal = float3(vertex.normal_x, vertex.normal_y, vertex.normal_z);
+    const float3 tangent = float3(vertex.tangent_x, vertex.tangent_y, vertex.tangent_z);
 
     vertices[vertex_id].position = mul(per_object_data.mvp_mtx, float4(position, 1.0));
     vertices[vertex_id].uv = uv;
-    vertices[vertex_id].normal = normal;
-    vertices[vertex_id].tangent = tangent;
+    vertices[vertex_id].normal = normalize(mul(float4(normal, 0.0), per_object_data.i_m_mtx).xyz);
+    vertices[vertex_id].tangent = normalize(mul(float4(tangent, 0.0), per_object_data.i_m_mtx).xyz);
   }
 
   // Per thread write two triangles.

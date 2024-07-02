@@ -73,7 +73,7 @@
 		},
 		{
 			"mesh":0,
-			"name":"Suzanne"
+			"name":"dragon"
 		}
 	],
 	"cameras":[
@@ -106,7 +106,7 @@
 	],
 	"meshes":[
 		{
-			"name":"Suzanne",
+			"name":"dragon",
 			"primitives":[
 				{
 					"attributes":{
@@ -125,79 +125,79 @@
 		{
 			"bufferView":0,
 			"componentType":5126,
-			"count":1066,
+			"count":421604,
 			"max":[
-				1.3671875,
-				0.8515625,
-				0.984375
+				2.078836441040039,
+				1.8140573501586914,
+				2.4335689544677734
 			],
 			"min":[
-				-1.3671875,
-				-0.8515625,
-				-0.984375
+				-2.13206148147583,
+				-2.9770383834838867,
+				-1.4276823997497559
 			],
 			"type":"VEC3"
 		},
 		{
 			"bufferView":1,
 			"componentType":5126,
-			"count":1066,
+			"count":421604,
 			"type":"VEC3"
 		},
 		{
 			"bufferView":2,
 			"componentType":5126,
-			"count":1066,
+			"count":421604,
 			"type":"VEC2"
 		},
 		{
 			"bufferView":3,
 			"componentType":5126,
-			"count":1066,
+			"count":421604,
 			"type":"VEC4"
 		},
 		{
 			"bufferView":4,
-			"componentType":5123,
-			"count":2904,
+			"componentType":5125,
+			"count":2495436,
 			"type":"SCALAR"
 		}
 	],
 	"bufferViews":[
 		{
 			"buffer":0,
-			"byteLength":12792,
+			"byteLength":5059248,
 			"byteOffset":0,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":12792,
-			"byteOffset":12792,
+			"byteLength":5059248,
+			"byteOffset":5059248,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":8528,
-			"byteOffset":25584,
+			"byteLength":3372832,
+			"byteOffset":10118496,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":17056,
-			"byteOffset":34112,
+			"byteLength":6745664,
+			"byteOffset":13491328,
 			"target":34962
 		},
 		{
 			"buffer":0,
-			"byteLength":5808,
-			"byteOffset":51168,
+			"byteLength":9981744,
+			"byteOffset":20236992,
 			"target":34963
 		}
 	],
 	"buffers":[
 		{
-			"byteLength":56976,
+			"byteLength":30218736,
 			"uri":"suzanne.bin"
 		}
 	]

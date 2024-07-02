@@ -3,6 +3,9 @@
 #define INVALID_INDEX 0xFFFFFFFF
 #define DIV_UP(a, b) (((a) + (b) - 1) / (b))
 
+#define TASK_SHADER_GROUP_SIZE 32
+#define MESH_SHADER_GROUP_SIZE 64
+
 struct Camera {
   float3 position;  // camera position
   float3 right;     // camera right vector
@@ -150,13 +153,13 @@ StructuredBuffer<uint> g_indices[];
 struct Meshlet {
   float4 bound_sphere;  // center, radius
   float3 cone_apex;
-  uint num_of_vertices;
+  float cone_cutoff;
   float3 cone_axis;
+  uint num_of_vertices;
   uint num_of_primitives;
   uint offset_of_vertices;
   uint offset_of_primitives;
-  float padding0;
-  float padding1;
+  float padding;
 };
 
 [[vk::binding(4, 1)]]
@@ -176,4 +179,5 @@ SamplerState g_samplers[];
 
 struct MeshShaderPayLoad {
   uint task_group_id;
+  bool is_visibles[TASK_SHADER_GROUP_SIZE];
 };
