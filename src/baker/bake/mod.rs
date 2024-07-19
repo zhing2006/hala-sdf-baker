@@ -669,6 +669,7 @@ impl SDFBaker {
     let max_distance = (self.settings.actual_size[0] * self.settings.actual_size[1] * self.settings.actual_size[2]).powf(1.0 / 3.0);
     let dimensions = self.estimate_grid_size();
     let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
+    let bounds = self.settings.get_bounds();
 
     // Create buffers and images.
     self.create_udf_buffers_images(num_of_voxels, &dimensions)?;
@@ -684,12 +685,15 @@ impl SDFBaker {
 
     // Update uniform buffers.
     let global_uniform = UDFBakerCSGlobalUniform {
-      i_m_mtx: self.get_model_matrix_in_scene(self.settings.selected_mesh_index).inverse(),
       dimensions,
       num_of_voxels,
       num_of_triangles,
       max_distance,
       initial_distance: max_distance * 1.01,
+      voxel_size: self.settings.actual_size[0] / dimensions[0] as f32,
+      min_bounds_extended: bounds.get_min(),
+      padding0: 0.0,
+      max_bounds_extended: bounds.get_max(),
     };
     log::debug!("Global uniform: {:?}", global_uniform);
     self.udf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
@@ -702,8 +706,26 @@ impl SDFBaker {
         &self.udf_baker_resources.global_uniform_buffer
       ],
     );
+    self.cross_xyz_descriptor_set.update_combined_image_samplers(
+      0,
+      0,
+      &[
+        (distance_texture, self.image3d_sampler.as_ref())
+      ],
+    );
+    self.sdf_visualization_descriptor_set.update_uniform_buffers(
+      0,
+      0,
+      &[self.sdf_visualization_uniform_buffer.as_ref()],
+    );
+    self.sdf_visualization_descriptor_set.update_combined_image_samplers(
+      0,
+      1,
+      &[
+        (distance_texture, self.image3d_sampler.as_ref())
+      ],
+    );
 
-    // Update the descriptor sets.
     let (
       initialize_descriptor_set,
       finalize_descriptor_set,
@@ -734,7 +756,7 @@ impl SDFBaker {
       command_buffers,
       distance_texture,
       splat_triangle_distance_descriptor_set,
-      &dimensions,
+      num_of_triangles,
     )?;
 
     // Finialize

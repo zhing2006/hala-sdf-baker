@@ -10,7 +10,7 @@ compute_programs:
     bindings:
       - storage_image
   splat_triangle_distance:
-    shader_file_path: /udf/splat_triangle_distance.cs_6_8.spv
+    shader_file_path: /build_geometry/splat_triangle_distance.cs_6_8.spv
     push_constant_size: 0
     bindings:
       - uniform_buffer

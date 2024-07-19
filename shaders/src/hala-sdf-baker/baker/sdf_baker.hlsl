@@ -20,7 +20,6 @@ cbuffer GlobalUniformBuffer {
   float3 _min_bounds_extended;
   float _padding1;
   float3 _max_bounds_extended;
-  float _padding2;
 };
 
 inline uint id3(uint i, uint j, uint k) {

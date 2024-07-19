@@ -11,13 +11,13 @@ void main(uint3 id: SV_DispatchThreadID) {
   if (id.x >= _dimensions.x || id.y >= _dimensions.y || id.z >= _dimensions.z)
     return;
 
-  const float4 selfRayMap = _ray_map[id.xyz];
+  const float4 self_ray_map = _ray_map[id.xyz];
   _sign_map_rw[id.xyz] = (
-    selfRayMap.x + // right side intersection.
-    selfRayMap.y + // bake side intersection.
-    selfRayMap.z + // top side intersection.
-    (selfRayMap.x - _ray_map[int3(0, id.y, id.z)].x) +  // left side intersection(negative).
-    (selfRayMap.y - _ray_map[int3(id.x, 0, id.z)].y) +  // front side intersection(negative).
-    (selfRayMap.z - _ray_map[int3(id.x, id.y, 0)].z)    // bottom side intersection(negative).
+    self_ray_map.x + // right side intersection.
+    self_ray_map.y + // bake side intersection.
+    self_ray_map.z + // top side intersection.
+    (self_ray_map.x - _ray_map[int3(0, id.y, id.z)].x) +  // left side intersection(negative).
+    (self_ray_map.y - _ray_map[int3(id.x, 0, id.z)].y) +  // front side intersection(negative).
+    (self_ray_map.z - _ray_map[int3(id.x, id.y, 0)].z)    // bottom side intersection(negative).
   );
 }

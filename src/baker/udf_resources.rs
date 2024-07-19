@@ -11,12 +11,15 @@ use crate::config;
 #[repr(C, align(16))]
 #[derive(Debug, Clone, Copy)]
 pub(super) struct UDFBakerCSGlobalUniform {
-  pub i_m_mtx: glam::Mat4,
   pub dimensions: [u32; 3],
   pub num_of_voxels: u32,
   pub num_of_triangles: u32,
   pub max_distance: f32,
   pub initial_distance: f32,
+  pub voxel_size: f32,
+  pub min_bounds_extended: [f32; 3],
+  pub padding0: f32,
+  pub max_bounds_extended: [f32; 3],
 }
 
 #[repr(C, align(16))]
