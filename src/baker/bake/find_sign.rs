@@ -10,13 +10,13 @@ impl SDFBaker {
     &mut self,
     dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
-    if let Some(sign_map) = &self.baker_resources.sign_map {
+    if let Some(sign_map) = &self.sdf_baker_resources.sign_map {
       if sign_map.extent.width != dimensions[0] || sign_map.extent.height != dimensions[1] || sign_map.extent.depth != dimensions[2] {
-        self.baker_resources.sign_map = None;
+        self.sdf_baker_resources.sign_map = None;
       }
     }
-    if self.baker_resources.sign_map.is_none() {
-      self.baker_resources.sign_map = Some(
+    if self.sdf_baker_resources.sign_map.is_none() {
+      self.sdf_baker_resources.sign_map = Some(
         hala_gfx::HalaImage::new_3d(
           Rc::clone(&self.resources.context.borrow().logical_device),
           hala_gfx::HalaImageUsageFlags::SAMPLED | hala_gfx::HalaImageUsageFlags::STORAGE,
@@ -30,13 +30,13 @@ impl SDFBaker {
       );
     }
 
-    if let Some(sign_map_bis) = &self.baker_resources.sign_map_bis {
+    if let Some(sign_map_bis) = &self.sdf_baker_resources.sign_map_bis {
       if sign_map_bis.extent.width != dimensions[0] || sign_map_bis.extent.height != dimensions[1] || sign_map_bis.extent.depth != dimensions[2] {
-        self.baker_resources.sign_map_bis = None;
+        self.sdf_baker_resources.sign_map_bis = None;
       }
     }
-    if self.baker_resources.sign_map_bis.is_none() {
-      self.baker_resources.sign_map_bis = Some(
+    if self.sdf_baker_resources.sign_map_bis.is_none() {
+      self.sdf_baker_resources.sign_map_bis = Some(
         hala_gfx::HalaImage::new_3d(
           Rc::clone(&self.resources.context.borrow().logical_device),
           hala_gfx::HalaImageUsageFlags::SAMPLED | hala_gfx::HalaImageUsageFlags::STORAGE,
@@ -66,7 +66,7 @@ impl SDFBaker {
   ),
     HalaRendererError
   > {
-    let sign_pass_6rays_descriptor_set = self.baker_resources.descriptor_sets.get("sign_pass_6rays")
+    let sign_pass_6rays_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("sign_pass_6rays")
       .ok_or(HalaRendererError::new("Failed to get the sign_pass_6rays descriptor set.", None))?;
     sign_pass_6rays_descriptor_set.update_sampled_images(
       0,
@@ -79,7 +79,7 @@ impl SDFBaker {
       &[sign_map],
     );
 
-    let sign_pass_neighbors_descriptor_set = self.baker_resources.descriptor_sets.get("sign_pass_neighbors")
+    let sign_pass_neighbors_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("sign_pass_neighbors")
       .ok_or(HalaRendererError::new("Failed to get the sign_pass_neighbors descriptor set.", None))?;
     sign_pass_neighbors_descriptor_set.update_sampled_images(
       0,
@@ -97,7 +97,7 @@ impl SDFBaker {
       &[sign_map],
     );
 
-    let sign_pass_neighbors_2_descriptor_set = self.baker_resources.descriptor_sets.get("sign_pass_neighbors_2")
+    let sign_pass_neighbors_2_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("sign_pass_neighbors_2")
       .ok_or(HalaRendererError::new("Failed to get the sign_pass_neighbors_2 descriptor set.", None))?;
     sign_pass_neighbors_2_descriptor_set.update_sampled_images(
       0,
@@ -175,13 +175,13 @@ impl SDFBaker {
 
     // First pass.
     {
-      let sign_pass_6rays_program = self.baker_resources.compute_programs.get("sign_pass_6rays")
+      let sign_pass_6rays_program = self.sdf_baker_resources.compute_programs.get("sign_pass_6rays")
         .ok_or(HalaRendererError::new("Failed to get the sign_pass_6rays program.", None))?;
       sign_pass_6rays_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           sign_pass_6rays_descriptor_set,
         ]
       );
@@ -211,7 +211,7 @@ impl SDFBaker {
 
     // 2-n passes.
     {
-      let sign_pass_neighbors_program = self.baker_resources.compute_programs.get("sign_pass_neighbors")
+      let sign_pass_neighbors_program = self.sdf_baker_resources.compute_programs.get("sign_pass_neighbors")
         .ok_or(HalaRendererError::new("Failed to get the sign_pass_neighbors program.", None))?;
 
       let num_of_neighnors = 8u32;
@@ -256,7 +256,7 @@ impl SDFBaker {
           0,
           command_buffers,
           &[
-            &self.baker_resources.static_descriptor_set,
+            &self.sdf_baker_resources.static_descriptor_set,
             get_descriptor_set(i),
           ]
         );

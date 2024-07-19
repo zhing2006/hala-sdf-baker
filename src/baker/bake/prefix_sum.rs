@@ -3,7 +3,7 @@ use std::rc::Rc;
 use hala_renderer::error::HalaRendererError;
 
 use crate::baker::SDFBaker;
-use crate::baker::resources::SDFBakerResources;
+use crate::baker::sdf_resources::SDFBakerResources;
 
 impl SDFBaker {
 
@@ -12,13 +12,13 @@ impl SDFBaker {
     num_of_voxels: u32,
   ) -> Result<(), HalaRendererError> {
     let voxels_buffer_size = num_of_voxels as u64 * std::mem::size_of::<[f32; 4]>() as u64;
-    if let Some(voxels_buffer) = &self.baker_resources.voxels_buffer {
+    if let Some(voxels_buffer) = &self.sdf_baker_resources.voxels_buffer {
       if voxels_buffer.size != voxels_buffer_size {
-        self.baker_resources.voxels_buffer = None;
+        self.sdf_baker_resources.voxels_buffer = None;
       }
     }
-    if self.baker_resources.voxels_buffer.is_none() {
-      self.baker_resources.voxels_buffer = Some(
+    if self.sdf_baker_resources.voxels_buffer.is_none() {
+      self.sdf_baker_resources.voxels_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           voxels_buffer_size,
@@ -30,13 +30,13 @@ impl SDFBaker {
     };
 
     let counters_buffer_size = num_of_voxels as u64 * std::mem::size_of::<u32>() as u64;
-    if let Some(counters_buffer) = &self.baker_resources.counters_buffer {
+    if let Some(counters_buffer) = &self.sdf_baker_resources.counters_buffer {
       if counters_buffer.size != counters_buffer_size {
-        self.baker_resources.counters_buffer = None;
+        self.sdf_baker_resources.counters_buffer = None;
       }
     }
-    if self.baker_resources.counters_buffer.is_none() {
-      self.baker_resources.counters_buffer = Some(
+    if self.sdf_baker_resources.counters_buffer.is_none() {
+      self.sdf_baker_resources.counters_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           counters_buffer_size,
@@ -50,13 +50,13 @@ impl SDFBaker {
     let in_sum_blocks_buffer_size =
       ((num_of_voxels + SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE - 1) / SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE) as u64 *
       std::mem::size_of::<u32>() as u64;
-    if let Some(in_sum_blocks_buffer) = &self.baker_resources.in_sum_blocks_buffer {
+    if let Some(in_sum_blocks_buffer) = &self.sdf_baker_resources.in_sum_blocks_buffer {
       if in_sum_blocks_buffer.size != in_sum_blocks_buffer_size {
-        self.baker_resources.in_sum_blocks_buffer = None;
+        self.sdf_baker_resources.in_sum_blocks_buffer = None;
       }
     }
-    if self.baker_resources.in_sum_blocks_buffer.is_none() {
-      self.baker_resources.in_sum_blocks_buffer = Some(
+    if self.sdf_baker_resources.in_sum_blocks_buffer.is_none() {
+      self.sdf_baker_resources.in_sum_blocks_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           in_sum_blocks_buffer_size,
@@ -70,13 +70,13 @@ impl SDFBaker {
     let sum_blocks_buffer_size =
       ((num_of_voxels + SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE - 1) / SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE) as u64 *
       std::mem::size_of::<u32>() as u64;
-    if let Some(sum_blocks_buffer) = &self.baker_resources.sum_blocks_buffer {
+    if let Some(sum_blocks_buffer) = &self.sdf_baker_resources.sum_blocks_buffer {
       if sum_blocks_buffer.size != sum_blocks_buffer_size {
-        self.baker_resources.sum_blocks_buffer = None;
+        self.sdf_baker_resources.sum_blocks_buffer = None;
       }
     }
-    if self.baker_resources.sum_blocks_buffer.is_none() {
-      self.baker_resources.sum_blocks_buffer = Some(
+    if self.sdf_baker_resources.sum_blocks_buffer.is_none() {
+      self.sdf_baker_resources.sum_blocks_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           sum_blocks_buffer_size,
@@ -90,13 +90,13 @@ impl SDFBaker {
     let accum_sum_blocks_buffer_size =
       ((num_of_voxels + SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE - 1) / SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE) as u64 *
       std::mem::size_of::<u32>() as u64;
-    if let Some(accum_sum_blocks_buffer) = &self.baker_resources.accum_sum_blocks_buffer {
+    if let Some(accum_sum_blocks_buffer) = &self.sdf_baker_resources.accum_sum_blocks_buffer {
       if accum_sum_blocks_buffer.size != accum_sum_blocks_buffer_size {
-        self.baker_resources.accum_sum_blocks_buffer = None;
+        self.sdf_baker_resources.accum_sum_blocks_buffer = None;
       }
     }
-    if self.baker_resources.accum_sum_blocks_buffer.is_none() {
-      self.baker_resources.accum_sum_blocks_buffer = Some(
+    if self.sdf_baker_resources.accum_sum_blocks_buffer.is_none() {
+      self.sdf_baker_resources.accum_sum_blocks_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           accum_sum_blocks_buffer_size,
@@ -108,13 +108,13 @@ impl SDFBaker {
     };
 
     let accum_counters_buffer_size = num_of_voxels as u64 * std::mem::size_of::<u32>() as u64;
-    if let Some(accum_counters_buffer) = &self.baker_resources.accum_counters_buffer {
+    if let Some(accum_counters_buffer) = &self.sdf_baker_resources.accum_counters_buffer {
       if accum_counters_buffer.size != accum_counters_buffer_size {
-        self.baker_resources.accum_counters_buffer = None;
+        self.sdf_baker_resources.accum_counters_buffer = None;
       }
     }
-    if self.baker_resources.accum_counters_buffer.is_none() {
-      self.baker_resources.accum_counters_buffer = Some(
+    if self.sdf_baker_resources.accum_counters_buffer.is_none() {
+      self.sdf_baker_resources.accum_counters_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           accum_counters_buffer_size,
@@ -126,13 +126,13 @@ impl SDFBaker {
     };
 
     let tmp_buffer_size = num_of_voxels as u64 * std::mem::size_of::<u32>() as u64;
-    if let Some(tmp_buffer) = &self.baker_resources.tmp_buffer {
+    if let Some(tmp_buffer) = &self.sdf_baker_resources.tmp_buffer {
       if tmp_buffer.size != tmp_buffer_size {
-        self.baker_resources.tmp_buffer = None;
+        self.sdf_baker_resources.tmp_buffer = None;
       }
     }
-    if self.baker_resources.tmp_buffer.is_none() {
-      self.baker_resources.tmp_buffer = Some(
+    if self.sdf_baker_resources.tmp_buffer.is_none() {
+      self.sdf_baker_resources.tmp_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           tmp_buffer_size,
@@ -147,13 +147,13 @@ impl SDFBaker {
     let additional_sum_blocks_buffer_size =
       ((num_of_voxels + sq_thread_group_size - 1) / sq_thread_group_size) as u64 *
       std::mem::size_of::<u32>() as u64;
-    if let Some(additional_sum_blocks_buffer) = &self.baker_resources.additional_sum_blocks_buffer {
+    if let Some(additional_sum_blocks_buffer) = &self.sdf_baker_resources.additional_sum_blocks_buffer {
       if additional_sum_blocks_buffer.size != additional_sum_blocks_buffer_size {
-        self.baker_resources.additional_sum_blocks_buffer = None;
+        self.sdf_baker_resources.additional_sum_blocks_buffer = None;
       }
     }
-    if self.baker_resources.additional_sum_blocks_buffer.is_none() {
-      self.baker_resources.additional_sum_blocks_buffer = Some(
+    if self.sdf_baker_resources.additional_sum_blocks_buffer.is_none() {
+      self.sdf_baker_resources.additional_sum_blocks_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           additional_sum_blocks_buffer_size,
@@ -189,7 +189,7 @@ impl SDFBaker {
     ),
     HalaRendererError
   > {
-    let in_bucket_sum_descriptor_set = self.baker_resources.descriptor_sets.get("in_bucket_sum")
+    let in_bucket_sum_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("in_bucket_sum")
       .ok_or(HalaRendererError::new("Failed to get the in_bucket_sum descriptor set.", None))?;
     in_bucket_sum_descriptor_set.update_storage_buffers(
       0,
@@ -201,7 +201,7 @@ impl SDFBaker {
       1,
       &[tmp_buffer],
     );
-    let block_sum_descriptor_set = self.baker_resources.descriptor_sets.get("block_sum")
+    let block_sum_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("block_sum")
       .ok_or(HalaRendererError::new("Failed to get the block_sum descriptor set.", None))?;
     block_sum_descriptor_set.update_storage_buffers(
       0,
@@ -218,7 +218,7 @@ impl SDFBaker {
       2,
       &[counters_buffer],
     );
-    let final_sum_descriptor_set = self.baker_resources.descriptor_sets.get("final_sum")
+    let final_sum_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("final_sum")
       .ok_or(HalaRendererError::new("Failed to get the final_sum descriptor set.", None))?;
     final_sum_descriptor_set.update_storage_buffers(
       0,
@@ -240,7 +240,7 @@ impl SDFBaker {
       3,
       &[accum_sum_blocks_buffer],
     );
-    let to_block_sum_buffer_descriptor_set = self.baker_resources.descriptor_sets.get("to_block_sum_buffer")
+    let to_block_sum_buffer_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("to_block_sum_buffer")
       .ok_or(HalaRendererError::new("Failed to get the to_block_sum_buffer descriptor set.", None))?;
     to_block_sum_buffer_descriptor_set.update_storage_buffers(
       0,
@@ -258,7 +258,7 @@ impl SDFBaker {
       &[counters_buffer],
     );
 
-    let in_bucket_sum_2_descriptor_set = self.baker_resources.descriptor_sets.get("in_bucket_sum_2")
+    let in_bucket_sum_2_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("in_bucket_sum_2")
       .ok_or(HalaRendererError::new("Failed to get the in_bucket_sum_2 descriptor set.", None))?;
     in_bucket_sum_2_descriptor_set.update_storage_buffers(
       0,
@@ -270,7 +270,7 @@ impl SDFBaker {
       1,
       &[in_sum_blocks_buffer],
     );
-    let block_sum_2_descriptor_set = self.baker_resources.descriptor_sets.get("block_sum_2")
+    let block_sum_2_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("block_sum_2")
       .ok_or(HalaRendererError::new("Failed to get the block_sum_2 descriptor set.", None))?;
     block_sum_2_descriptor_set.update_storage_buffers(
       0,
@@ -287,7 +287,7 @@ impl SDFBaker {
       2,
       &[sum_blocks_buffer],
     );
-    let final_sum_2_descriptor_set = self.baker_resources.descriptor_sets.get("final_sum_2")
+    let final_sum_2_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("final_sum_2")
       .ok_or(HalaRendererError::new("Failed to get the final_sum_2 descriptor set.", None))?;
     final_sum_2_descriptor_set.update_storage_buffers(
       0,
@@ -379,14 +379,14 @@ impl SDFBaker {
     // Prefix sum.
     {
       let dispatch_size = SDFBaker::get_prefix_sum_dispatch_size(num_of_voxels);
-      let in_bucket_sum_program = self.baker_resources.compute_programs.get("in_bucket_sum")
+      let in_bucket_sum_program = self.sdf_baker_resources.compute_programs.get("in_bucket_sum")
         .ok_or(HalaRendererError::new("Failed to get the in_bucket_sum program.", None))?;
 
       in_bucket_sum_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           in_bucket_sum_descriptor_set
         ],
       );
@@ -457,14 +457,14 @@ impl SDFBaker {
       let num_of_blocks = (num_of_voxels + SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE - 1) / SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE;
       if num_of_blocks > SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE {
         {
-          let to_block_sum_buffer_program = self.baker_resources.compute_programs.get("to_block_sum_buffer")
+          let to_block_sum_buffer_program = self.sdf_baker_resources.compute_programs.get("to_block_sum_buffer")
             .ok_or(HalaRendererError::new("Failed to get the to_block_sum_buffer program.", None))?;
 
           to_block_sum_buffer_program.bind(
             0,
             command_buffers,
             &[
-              &self.baker_resources.static_descriptor_set,
+              &self.sdf_baker_resources.static_descriptor_set,
               to_block_sum_buffer_descriptor_set,
             ],
           );
@@ -509,7 +509,7 @@ impl SDFBaker {
             0,
             command_buffers,
             &[
-              &self.baker_resources.static_descriptor_set,
+              &self.sdf_baker_resources.static_descriptor_set,
               in_bucket_sum_2_descriptor_set,
             ],
           );
@@ -551,14 +551,14 @@ impl SDFBaker {
           );
 
           let cb_thread_group_size = sq_thread_group_size * SDFBakerResources::PREFIX_SUM_THREAD_GROUP_SIZE;
-          let block_sum_program = self.baker_resources.compute_programs.get("block_sum")
+          let block_sum_program = self.sdf_baker_resources.compute_programs.get("block_sum")
             .ok_or(HalaRendererError::new("Failed to get the block_sum program.", None))?;
 
           block_sum_program.bind(
             0,
             command_buffers,
             &[
-              &self.baker_resources.static_descriptor_set,
+              &self.sdf_baker_resources.static_descriptor_set,
               block_sum_2_descriptor_set,
             ],
           );
@@ -599,14 +599,14 @@ impl SDFBaker {
             ],
           );
 
-          let final_sum_program = self.baker_resources.compute_programs.get("final_sum")
+          let final_sum_program = self.sdf_baker_resources.compute_programs.get("final_sum")
             .ok_or(HalaRendererError::new("Failed to get the final_sum program.", None))?;
 
           final_sum_program.bind(
             0,
             command_buffers,
             &[
-              &self.baker_resources.static_descriptor_set,
+              &self.sdf_baker_resources.static_descriptor_set,
               final_sum_2_descriptor_set,
             ],
           );
@@ -631,14 +631,14 @@ impl SDFBaker {
           );
         }
       } else {
-        let block_sum_program = self.baker_resources.compute_programs.get("block_sum")
+        let block_sum_program = self.sdf_baker_resources.compute_programs.get("block_sum")
           .ok_or(HalaRendererError::new("Failed to get the block_sum program.", None))?;
 
         block_sum_program.bind(
           0,
           command_buffers,
           &[
-            &self.baker_resources.static_descriptor_set,
+            &self.sdf_baker_resources.static_descriptor_set,
             block_sum_descriptor_set,
           ],
         );
@@ -685,14 +685,14 @@ impl SDFBaker {
         ],
       );
 
-      let final_sum_program = self.baker_resources.compute_programs.get("final_sum")
+      let final_sum_program = self.sdf_baker_resources.compute_programs.get("final_sum")
         .ok_or(HalaRendererError::new("Failed to get the final_sum program.", None))?;
 
       final_sum_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           final_sum_descriptor_set,
         ],
       );

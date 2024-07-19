@@ -17,17 +17,19 @@ use hala_renderer::renderer::{
 };
 
 pub mod settings;
-pub mod resources;
+pub mod sdf_resources;
+pub mod udf_resources;
 pub mod draw;
 pub mod debug;
 pub mod bake;
 
 use crate::config;
 use crate::baker::settings::SDFBakerSettings;
-use crate::baker::resources::{
+use crate::baker::sdf_resources::{
   SDFBakerResources,
   SDFBakerSDFVisualizationUniform,
 };
+use crate::baker::udf_resources::UDFBakerResources;
 
 /// The axis enum.
 pub(crate) enum Axis {
@@ -76,7 +78,8 @@ pub struct SDFBaker {
   pub(crate) global_uniform_buffer: std::mem::ManuallyDrop<hala_gfx::HalaBuffer>,
 
   pub(crate) baker_config: config::BakerConfig,
-  pub(crate) baker_resources: std::mem::ManuallyDrop<SDFBakerResources>,
+  pub(crate) sdf_baker_resources: std::mem::ManuallyDrop<SDFBakerResources>,
+  pub(crate) udf_baker_resources: std::mem::ManuallyDrop<UDFBakerResources>,
 
   pub(crate) wireframe_program: Option<HalaGraphicsProgram>,
   pub(crate) wireframe_debug_program: Option<HalaGraphicsProgram>,
@@ -117,7 +120,8 @@ impl Drop for SDFBaker {
     HalaShaderCache::get_instance().borrow_mut().clear();
     unsafe {
       std::mem::ManuallyDrop::drop(&mut self.bounds_program);
-      std::mem::ManuallyDrop::drop(&mut self.baker_resources);
+      std::mem::ManuallyDrop::drop(&mut self.udf_baker_resources);
+      std::mem::ManuallyDrop::drop(&mut self.sdf_baker_resources);
       std::mem::ManuallyDrop::drop(&mut self.global_uniform_buffer);
       std::mem::ManuallyDrop::drop(&mut self.static_descriptor_set);
       std::mem::ManuallyDrop::drop(&mut self.bake_command_buffers);
@@ -239,14 +243,21 @@ impl SDFBaker {
       }
     };
 
-    let baker_resources = SDFBakerResources::new(
+    let sdf_baker_resources = SDFBakerResources::new(
       Rc::clone(&resources.context.borrow().logical_device),
       Rc::clone(&resources.descriptor_pool),
       &resources.context.borrow().swapchain,
       &baker_config,
       &pipeline_cache,
     )?;
-    baker_resources.static_descriptor_set.update_uniform_buffers(0, 0, &[&baker_resources.global_uniform_buffer]);
+
+    let udf_baker_resources = UDFBakerResources::new(
+      Rc::clone(&resources.context.borrow().logical_device),
+      Rc::clone(&resources.descriptor_pool),
+      &resources.context.borrow().swapchain,
+      &baker_config,
+      &pipeline_cache,
+    )?;
 
     let bounds_desc = baker_config.graphics_programs.get("bounds").ok_or(HalaRendererError::new("Failed to get graphics program \"bounds\".", None))?;
     let bounds_program = HalaGraphicsProgram::new(
@@ -277,7 +288,8 @@ impl SDFBaker {
       global_uniform_buffer: std::mem::ManuallyDrop::new(global_uniform_buffer),
 
       baker_config,
-      baker_resources: std::mem::ManuallyDrop::new(baker_resources),
+      sdf_baker_resources: std::mem::ManuallyDrop::new(sdf_baker_resources),
+      udf_baker_resources: std::mem::ManuallyDrop::new(udf_baker_resources),
 
       wireframe_program: None,
       wireframe_debug_program: None,
@@ -763,7 +775,7 @@ impl HalaRendererTrait for SDFBaker {
       dimensions: self.estimate_grid_size(),
       inv_resolution: 1.0 / self.settings.max_resolution as f32,
     };
-    self.baker_resources.sdf_visualization_uniform_buffer.update_memory(0, std::slice::from_ref(&sdf_visualization_uniform))?;
+    self.sdf_baker_resources.sdf_visualization_uniform_buffer.update_memory(0, std::slice::from_ref(&sdf_visualization_uniform))?;
 
     // Update the SDF baker.
     self.record_command_buffer(

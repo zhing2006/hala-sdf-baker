@@ -80,27 +80,27 @@ impl SDFBaker {
 
     // Draw debug images to screen.
     if self.settings.show_render_targets {
-      if self.baker_resources.render_targets[0].is_some() {
+      if self.sdf_baker_resources.render_targets[0].is_some() {
         self.debug_draw_image_2_screen(
           index,
           command_buffers,
-          &self.baker_resources.image_2_screen_descriptor_sets[0],
+          &self.sdf_baker_resources.image_2_screen_descriptor_sets[0],
           &[-0.75, -0.75, 0.25, 0.25]
         )?;
       }
-      if self.baker_resources.render_targets[1].is_some() {
+      if self.sdf_baker_resources.render_targets[1].is_some() {
         self.debug_draw_image_2_screen(
           index,
           command_buffers,
-          &self.baker_resources.image_2_screen_descriptor_sets[1],
+          &self.sdf_baker_resources.image_2_screen_descriptor_sets[1],
           &[0.0, -0.75, 0.25, 0.25]
         )?;
       }
-      if self.baker_resources.render_targets[2].is_some() {
+      if self.sdf_baker_resources.render_targets[2].is_some() {
         self.debug_draw_image_2_screen(
           index,
           command_buffers,
-          &self.baker_resources.image_2_screen_descriptor_sets[2],
+          &self.sdf_baker_resources.image_2_screen_descriptor_sets[2],
           &[0.75, -0.75, 0.25, 0.25]
         )?;
       }
@@ -116,7 +116,7 @@ impl SDFBaker {
 
     // Draw debug image3d.
     let mvp_mtx = self.get_mvp_matrix_in_scene(self.settings.selected_mesh_index).to_cols_array();
-    if self.settings.show_ray_map && self.baker_resources.ray_map.is_some() {
+    if self.settings.show_ray_map && self.sdf_baker_resources.ray_map.is_some() {
       self.debug_draw_image3d(
         index,
         command_buffers,
@@ -124,7 +124,7 @@ impl SDFBaker {
         &mvp_mtx,
       )?;
     }
-    if self.settings.show_sdf && self.baker_resources.distance_texture.is_some() {
+    if self.settings.show_sdf && self.sdf_baker_resources.distance_texture.is_some() {
       self.debug_draw_sdf(
         index,
         command_buffers,

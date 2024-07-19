@@ -77,7 +77,7 @@ impl SDFBaker {
         wireframe_program.draw(
           index,
           command_buffers,
-          self.baker_resources.num_of_triangles * 3,
+          self.sdf_baker_resources.num_of_triangles * 3,
           1,
           0,
           0
@@ -102,20 +102,20 @@ impl SDFBaker {
     descriptor_set: &hala_gfx::HalaDescriptorSet,
     rect: &[f32; 4],
   ) -> Result<(), HalaRendererError> {
-    self.baker_resources.image_2_screen_program.bind(
+    self.sdf_baker_resources.image_2_screen_program.bind(
       index,
       command_buffers,
       &[descriptor_set]
     );
 
-    self.baker_resources.image_2_screen_program.push_constants_f32(
+    self.sdf_baker_resources.image_2_screen_program.push_constants_f32(
       index,
       command_buffers,
       0,
       rect,
     );
 
-    self.baker_resources.image_2_screen_program.draw(
+    self.sdf_baker_resources.image_2_screen_program.draw(
       index,
       command_buffers,
       4,
@@ -140,14 +140,14 @@ impl SDFBaker {
     bounds: &HalaBounds,
     mvp_mtx: &[f32; 16],
   ) -> Result<(), HalaRendererError> {
-    self.baker_resources.cross_xyz_program.bind(
+    self.sdf_baker_resources.cross_xyz_program.bind(
       index,
       command_buffers,
-      &[self.baker_resources.cross_xyz_descriptor_set.as_ref()]
+      &[self.sdf_baker_resources.cross_xyz_descriptor_set.as_ref()]
     );
 
     // Push constants.
-    self.baker_resources.cross_xyz_program.push_constants_f32(
+    self.sdf_baker_resources.cross_xyz_program.push_constants_f32(
       index,
       command_buffers,
       0,
@@ -162,7 +162,7 @@ impl SDFBaker {
     );
 
     // Draw planes.
-    self.baker_resources.cross_xyz_program.draw(
+    self.sdf_baker_resources.cross_xyz_program.draw(
       index,
       command_buffers,
       18,
@@ -190,16 +190,16 @@ impl SDFBaker {
     color: &[f32; 4],
     offset: f32,
   ) -> Result<(), HalaRendererError> {
-    self.baker_resources.sdf_visualization_program.bind(
+    self.sdf_baker_resources.sdf_visualization_program.bind(
       index,
       command_buffers,
       &[
-        self.baker_resources.sdf_visualization_descriptor_set.as_ref()
+        self.sdf_baker_resources.sdf_visualization_descriptor_set.as_ref()
       ]
     );
 
     // Push constants.
-    self.baker_resources.sdf_visualization_program.push_constants_f32(
+    self.sdf_baker_resources.sdf_visualization_program.push_constants_f32(
       index,
       command_buffers,
       0,
@@ -212,7 +212,7 @@ impl SDFBaker {
     );
 
     // Draw planes.
-    self.baker_resources.sdf_visualization_program.draw(
+    self.sdf_baker_resources.sdf_visualization_program.draw(
       index,
       command_buffers,
       36,

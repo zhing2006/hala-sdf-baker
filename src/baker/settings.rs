@@ -3,6 +3,8 @@ use hala_renderer::scene;
 /// The SDF baker settings.
 #[derive(Debug, Clone, Copy)]
 pub struct SDFBakerSettings{
+  pub is_sdf: bool, // Whether the baker is SDF or UDF.
+
   // Common settings.
   pub show_desired_box: bool,
   pub show_actual_box: bool,
@@ -35,6 +37,8 @@ pub struct SDFBakerSettings{
 impl Default for SDFBakerSettings {
   fn default() -> Self {
     Self {
+      is_sdf: true,
+
       show_desired_box: true,
       show_actual_box: true,
       show_wireframe: true,

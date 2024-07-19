@@ -115,6 +115,13 @@ impl SDFBakerResources {
 
   pub const PREFIX_SUM_THREAD_GROUP_SIZE: u32 = 512;
 
+  /// Create a new SDF baker resources.
+  /// param logical_device: The logical device.
+  /// param descriptor_pool: The descriptor pool.
+  /// param swapchain: The swapchain.
+  /// param baker_config: The baker config.
+  /// param pipeline_cache: The pipeline cache.
+  /// return: The result.
   pub(crate) fn new(
     logical_device: Rc<RefCell<hala_gfx::HalaLogicalDevice>>,
     descriptor_pool: Rc<RefCell<hala_gfx::HalaDescriptorPool>>,
@@ -148,6 +155,7 @@ impl SDFBakerResources {
       hala_gfx::HalaMemoryLocation::CpuToGpu,
       "baker_global.uniform_buffer",
     )?;
+    static_descriptor_set.update_uniform_buffers(0, 0, &[&global_uniform_buffer]);
 
     let mesh_uniform_buffer = hala_gfx::HalaBuffer::new(
       logical_device.clone(),

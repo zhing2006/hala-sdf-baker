@@ -10,13 +10,13 @@ impl SDFBaker {
     &mut self,
     dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
-    if let Some(distance_texture) = &self.baker_resources.distance_texture {
+    if let Some(distance_texture) = &self.sdf_baker_resources.distance_texture {
       if distance_texture.extent.width != dimensions[0] || distance_texture.extent.height != dimensions[1] || distance_texture.extent.depth != dimensions[2] {
-        self.baker_resources.distance_texture = None;
+        self.sdf_baker_resources.distance_texture = None;
       }
     }
-    if self.baker_resources.distance_texture.is_none() {
-      self.baker_resources.distance_texture = Some(
+    if self.sdf_baker_resources.distance_texture.is_none() {
+      self.sdf_baker_resources.distance_texture = Some(
         hala_gfx::HalaImage::new_3d(
           Rc::clone(&self.resources.context.borrow().logical_device),
           hala_gfx::HalaImageUsageFlags::SAMPLED | hala_gfx::HalaImageUsageFlags::STORAGE,
@@ -44,7 +44,7 @@ impl SDFBaker {
     voxels_buffer: &hala_gfx::HalaBuffer,
     distance_texture: &hala_gfx::HalaImage,
   ) -> Result<&hala_gfx::HalaDescriptorSet, HalaRendererError> {
-    let dtw_descriptor_set = self.baker_resources.descriptor_sets.get("distance_transform_winding")
+    let dtw_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("distance_transform_winding")
       .ok_or(HalaRendererError::new("Failed to get the distance_transform_winding descriptor set.", None))?;
     dtw_descriptor_set.update_storage_buffers(
       0,
@@ -139,14 +139,14 @@ impl SDFBaker {
     }
 
     {
-      let program = self.baker_resources.compute_programs.get("distance_transform_winding")
+      let program = self.sdf_baker_resources.compute_programs.get("distance_transform_winding")
         .ok_or(HalaRendererError::new("Failed to get the distance_transform_winding compute program.", None))?;
 
       program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           descriptor_set,
         ],
       );

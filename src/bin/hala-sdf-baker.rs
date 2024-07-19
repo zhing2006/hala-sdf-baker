@@ -169,6 +169,8 @@ impl HalaApplication for SDFBakerApplication {
             .position([10.0, 10.0], imgui::Condition::FirstUseEver)
             .always_auto_resize(true)
             .build(|| {
+              let _ = ui.checkbox("To Bake SDF(checked) or UDF(unchecked)", &mut baker.settings.is_sdf);
+
               if let Some(_t) = ui.tree_node("Advanced Settings") {
                 let _ = ui.input_int("Sign Passes Count", &mut baker.settings.sign_passes_count).build();
                 let _ = ui.input_float("In/Out Threshold", &mut baker.settings.in_out_threshold).build();
@@ -225,7 +227,7 @@ impl HalaApplication for SDFBakerApplication {
               ui.separator();
 
               if ui.button_with_size("Bake", [100.0, 30.0]) {
-                baker.bake().expect("Failed to bake.");
+                baker.bake_sdf().expect("Failed to bake.");
               }
               ui.same_line();
               if ui.button_with_size("Save", [100.0, 30.0]) {

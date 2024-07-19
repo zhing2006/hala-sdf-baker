@@ -10,13 +10,13 @@ impl SDFBaker {
     &mut self,
     dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
-    if let Some(ray_map) = &self.baker_resources.ray_map {
+    if let Some(ray_map) = &self.sdf_baker_resources.ray_map {
       if ray_map.extent.width != dimensions[0] || ray_map.extent.height != dimensions[1] || ray_map.extent.depth != dimensions[2] {
-        self.baker_resources.ray_map = None;
+        self.sdf_baker_resources.ray_map = None;
       }
     }
-    if self.baker_resources.ray_map.is_none() {
-      self.baker_resources.ray_map = Some(
+    if self.sdf_baker_resources.ray_map.is_none() {
+      self.sdf_baker_resources.ray_map = Some(
         hala_gfx::HalaImage::new_3d(
           Rc::clone(&self.resources.context.borrow().logical_device),
           hala_gfx::HalaImageUsageFlags::SAMPLED | hala_gfx::HalaImageUsageFlags::STORAGE,
@@ -48,7 +48,7 @@ impl SDFBaker {
     ),
     HalaRendererError
   > {
-    let generate_ray_map_local2x2_descriptor_set =  self.baker_resources.descriptor_sets.get("generate_ray_map_local2x2")
+    let generate_ray_map_local2x2_descriptor_set =  self.sdf_baker_resources.descriptor_sets.get("generate_ray_map_local2x2")
       .ok_or(HalaRendererError::new("Failed to get the generate_ray_map_local2x2 descriptor set.", None))?;
     generate_ray_map_local2x2_descriptor_set.update_storage_buffers(
       0,
@@ -71,7 +71,7 @@ impl SDFBaker {
       &[ray_map],
     );
 
-    let ray_map_sum_x_descriptor_set =  self.baker_resources.descriptor_sets.get("ray_map_sum_x")
+    let ray_map_sum_x_descriptor_set =  self.sdf_baker_resources.descriptor_sets.get("ray_map_sum_x")
       .ok_or(HalaRendererError::new("Failed to get the ray_map_sum_x descriptor set.", None))?;
     ray_map_sum_x_descriptor_set.update_storage_images(
       0,
@@ -79,7 +79,7 @@ impl SDFBaker {
       &[ray_map],
     );
 
-    let ray_map_sum_y_descriptor_set =  self.baker_resources.descriptor_sets.get("ray_map_sum_y")
+    let ray_map_sum_y_descriptor_set =  self.sdf_baker_resources.descriptor_sets.get("ray_map_sum_y")
       .ok_or(HalaRendererError::new("Failed to get the ray_map_sum_y descriptor set.", None))?;
     ray_map_sum_y_descriptor_set.update_storage_images(
       0,
@@ -87,7 +87,7 @@ impl SDFBaker {
       &[ray_map],
     );
 
-    let ray_map_sum_z_descriptor_set =  self.baker_resources.descriptor_sets.get("ray_map_sum_z")
+    let ray_map_sum_z_descriptor_set =  self.sdf_baker_resources.descriptor_sets.get("ray_map_sum_z")
       .ok_or(HalaRendererError::new("Failed to get the ray_map_sum_z descriptor set.", None))?;
     ray_map_sum_z_descriptor_set.update_storage_images(
       0,
@@ -156,14 +156,14 @@ impl SDFBaker {
     // Generate ray map for each local 2x2 block by 8 different offsets.
     // offsets = (0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)
     {
-      let generate_ray_map_local2x2_program = self.baker_resources.compute_programs.get("generate_ray_map_local2x2")
+      let generate_ray_map_local2x2_program = self.sdf_baker_resources.compute_programs.get("generate_ray_map_local2x2")
         .ok_or(HalaRendererError::new("Failed to get the generate_ray_map_local2x2 compute program.", None))?;
 
       generate_ray_map_local2x2_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           generate_ray_map_local2x2_descriptor_set,
         ],
       );
@@ -231,13 +231,13 @@ impl SDFBaker {
         ],
       );
 
-      let ray_map_sum_x_program = self.baker_resources.compute_programs.get("ray_map_sum_x")
+      let ray_map_sum_x_program = self.sdf_baker_resources.compute_programs.get("ray_map_sum_x")
         .ok_or(HalaRendererError::new("Failed to get the ray_map_sum_x compute program.", None))?;
       ray_map_sum_x_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           _ray_map_sum_x_descriptor_set,
         ],
       );
@@ -266,13 +266,13 @@ impl SDFBaker {
         ],
       );
 
-      let ray_map_sum_y_program = self.baker_resources.compute_programs.get("ray_map_sum_y")
+      let ray_map_sum_y_program = self.sdf_baker_resources.compute_programs.get("ray_map_sum_y")
         .ok_or(HalaRendererError::new("Failed to get the ray_map_sum_y compute program.", None))?;
       ray_map_sum_y_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           _ray_map_sum_y_descriptor_set,
         ],
       );
@@ -301,13 +301,13 @@ impl SDFBaker {
         ],
       );
 
-      let ray_map_sum_z_program = self.baker_resources.compute_programs.get("ray_map_sum_z")
+      let ray_map_sum_z_program = self.sdf_baker_resources.compute_programs.get("ray_map_sum_z")
         .ok_or(HalaRendererError::new("Failed to get the ray_map_sum_z compute program.", None))?;
       ray_map_sum_z_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           _ray_map_sum_z_descriptor_set,
         ],
       );

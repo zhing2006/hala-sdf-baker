@@ -16,7 +16,7 @@ impl SDFBaker {
     voxels_texture: &hala_gfx::HalaImage,
     voxels_texture_bis: &hala_gfx::HalaImage,
   ) -> Result<&hala_gfx::HalaDescriptorSet, HalaRendererError> {
-    let descriptor_set = self.baker_resources.descriptor_sets.get("init")
+    let descriptor_set = self.sdf_baker_resources.descriptor_sets.get("init")
       .ok_or(HalaRendererError::new("Failed to get the initialize descriptor set.", None))?;
     descriptor_set.update_storage_buffers(
       0,
@@ -98,13 +98,13 @@ impl SDFBaker {
       ]
     );
 
-    let program = self.baker_resources.compute_programs.get("init")
+    let program = self.sdf_baker_resources.compute_programs.get("init")
       .ok_or(HalaRendererError::new("Failed to get the initialize program.", None))?;
     program.bind(
       0,
       command_buffers,
       &[
-        &self.baker_resources.static_descriptor_set,
+        &self.sdf_baker_resources.static_descriptor_set,
         descriptor_set,
       ]
     );

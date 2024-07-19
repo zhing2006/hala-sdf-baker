@@ -6,7 +6,7 @@ use hala_renderer::graphics_program::HalaGraphicsProgram;
 
 use crate::baker::SDFBaker;
 
-use crate::baker::resources::{
+use crate::baker::sdf_resources::{
   SDFBakerCSMeshUniform,
   SDFBakerCSConservativeRasterizationUniform,
 };
@@ -20,13 +20,13 @@ impl SDFBaker {
     upper_bound_count: u32,
   ) -> Result<(), HalaRendererError> {
     let triangle_uvw_buffer_size = (num_of_triangles * 3 * std::mem::size_of::<[f32; 4]>() as u32) as u64;
-    if let Some(triangle_uvw_buffer) = &self.baker_resources.triangle_uvw_buffer {
+    if let Some(triangle_uvw_buffer) = &self.sdf_baker_resources.triangle_uvw_buffer {
       if triangle_uvw_buffer.size != triangle_uvw_buffer_size {
-        self.baker_resources.triangle_uvw_buffer = None;
+        self.sdf_baker_resources.triangle_uvw_buffer = None;
       }
     }
-    if self.baker_resources.triangle_uvw_buffer.is_none() {
-      self.baker_resources.triangle_uvw_buffer = Some(
+    if self.sdf_baker_resources.triangle_uvw_buffer.is_none() {
+      self.sdf_baker_resources.triangle_uvw_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           triangle_uvw_buffer_size,
@@ -38,13 +38,13 @@ impl SDFBaker {
     };
 
     let coord_flip_buffer_size = (num_of_triangles * std::mem::size_of::<u32>() as u32) as u64;
-    if let Some(coord_flip_buffer) = &self.baker_resources.coord_flip_buffer {
+    if let Some(coord_flip_buffer) = &self.sdf_baker_resources.coord_flip_buffer {
       if coord_flip_buffer.size != coord_flip_buffer_size {
-        self.baker_resources.coord_flip_buffer = None;
+        self.sdf_baker_resources.coord_flip_buffer = None;
       }
     }
-    if self.baker_resources.coord_flip_buffer.is_none() {
-      self.baker_resources.coord_flip_buffer = Some(
+    if self.sdf_baker_resources.coord_flip_buffer.is_none() {
+      self.sdf_baker_resources.coord_flip_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           coord_flip_buffer_size,
@@ -56,13 +56,13 @@ impl SDFBaker {
     };
 
     let aabb_buffer_size = (num_of_triangles * std::mem::size_of::<[f32; 4]>() as u32) as u64;
-    if let Some(aabb_buffer) = &self.baker_resources.aabb_buffer {
+    if let Some(aabb_buffer) = &self.sdf_baker_resources.aabb_buffer {
       if aabb_buffer.size != aabb_buffer_size {
-        self.baker_resources.aabb_buffer = None;
+        self.sdf_baker_resources.aabb_buffer = None;
       }
     }
-    if self.baker_resources.aabb_buffer.is_none() {
-      self.baker_resources.aabb_buffer = Some(
+    if self.sdf_baker_resources.aabb_buffer.is_none() {
+      self.sdf_baker_resources.aabb_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           aabb_buffer_size,
@@ -74,13 +74,13 @@ impl SDFBaker {
     };
 
     let vertices_buffer_size = (num_of_triangles * 3 * std::mem::size_of::<[f32; 4]>() as u32) as u64;
-    if let Some(vertices_buffer) = &self.baker_resources.vertices_buffer {
+    if let Some(vertices_buffer) = &self.sdf_baker_resources.vertices_buffer {
       if vertices_buffer.size != vertices_buffer_size {
-        self.baker_resources.vertices_buffer = None;
+        self.sdf_baker_resources.vertices_buffer = None;
       }
     }
-    if self.baker_resources.vertices_buffer.is_none() {
-      self.baker_resources.vertices_buffer = Some(
+    if self.sdf_baker_resources.vertices_buffer.is_none() {
+      self.sdf_baker_resources.vertices_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           vertices_buffer_size,
@@ -89,17 +89,17 @@ impl SDFBaker {
           "vertices.buffer",
         )?
       );
-      self.baker_resources.num_of_triangles = num_of_triangles;
+      self.sdf_baker_resources.num_of_triangles = num_of_triangles;
     };
 
     let triangles_in_voxels_buffer_size = (upper_bound_count * std::mem::size_of::<u32>() as u32) as u64;
-    if let Some(triangles_in_voxels_buffer) = &self.baker_resources.triangles_in_voxels_buffer {
+    if let Some(triangles_in_voxels_buffer) = &self.sdf_baker_resources.triangles_in_voxels_buffer {
       if triangles_in_voxels_buffer.size != triangles_in_voxels_buffer_size {
-        self.baker_resources.triangles_in_voxels_buffer = None;
+        self.sdf_baker_resources.triangles_in_voxels_buffer = None;
       }
     }
-    if self.baker_resources.triangles_in_voxels_buffer.is_none() {
-      self.baker_resources.triangles_in_voxels_buffer = Some(
+    if self.sdf_baker_resources.triangles_in_voxels_buffer.is_none() {
+      self.sdf_baker_resources.triangles_in_voxels_buffer = Some(
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           triangles_in_voxels_buffer_size,
@@ -115,15 +115,15 @@ impl SDFBaker {
       [dimensions[1], dimensions[0], dimensions[2]],
     );
     for i in 0..3 {
-      if let Some(render_target) = &self.baker_resources.render_targets[i] {
+      if let Some(render_target) = &self.sdf_baker_resources.render_targets[i] {
         if render_target.extent.width != width[i] || render_target.extent.height != height[i] {
-          self.baker_resources.render_targets[i] = None;
-          self.baker_resources.write_uvw_and_coverage_programs[i] = None;
-          self.baker_resources.write_triangle_ids_to_voxels_programs[i] = None;
+          self.sdf_baker_resources.render_targets[i] = None;
+          self.sdf_baker_resources.write_uvw_and_coverage_programs[i] = None;
+          self.sdf_baker_resources.write_triangle_ids_to_voxels_programs[i] = None;
         }
       }
-      if self.baker_resources.render_targets[i].is_none() {
-        self.baker_resources.render_targets[i] = Some(
+      if self.sdf_baker_resources.render_targets[i].is_none() {
+        self.sdf_baker_resources.render_targets[i] = Some(
           hala_gfx::HalaImage::new_2d(
             Rc::clone(&self.resources.context.borrow().logical_device),
             hala_gfx::HalaImageUsageFlags::COLOR_ATTACHMENT | hala_gfx::HalaImageUsageFlags::SAMPLED,
@@ -137,16 +137,16 @@ impl SDFBaker {
           )?
         );
       }
-      if self.baker_resources.write_uvw_and_coverage_programs[i].is_none() {
+      if self.sdf_baker_resources.write_uvw_and_coverage_programs[i].is_none() {
         let write_uvw_and_coverage_desc = self.baker_config.graphics_programs.get("write_uvw_and_coverage")
           .ok_or(HalaRendererError::new("Failed to get graphics program \"write_uvw_and_coverage\".", None))?;
-        let mut write_uvw_and_coverage_descriptor_set_layouts = vec![&self.baker_resources.static_descriptor_set.layout];
+        let mut write_uvw_and_coverage_descriptor_set_layouts = vec![&self.sdf_baker_resources.static_descriptor_set.layout];
         if !write_uvw_and_coverage_desc.bindings.is_empty() {
-          let write_uvw_and_coverage_descriptor_set = self.baker_resources.descriptor_sets.get("write_uvw_and_coverage")
+          let write_uvw_and_coverage_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("write_uvw_and_coverage")
             .ok_or(HalaRendererError::new("Failed to get the write_uvw_and_coverage descriptor set.", None))?;
           write_uvw_and_coverage_descriptor_set_layouts.push(&write_uvw_and_coverage_descriptor_set.layout);
         }
-        self.baker_resources.write_uvw_and_coverage_programs[i] = Some(HalaGraphicsProgram::with_formats_and_size(
+        self.sdf_baker_resources.write_uvw_and_coverage_programs[i] = Some(HalaGraphicsProgram::with_formats_and_size(
           Rc::clone(&self.resources.context.borrow().logical_device),
           &[hala_gfx::HalaFormat::R8G8B8A8_SRGB],
           None,
@@ -164,16 +164,16 @@ impl SDFBaker {
           &format!("write_uvw_and_coverage_{}", i),
         )?);
       }
-      if self.baker_resources.write_triangle_ids_to_voxels_programs[i].is_none() {
+      if self.sdf_baker_resources.write_triangle_ids_to_voxels_programs[i].is_none() {
         let write_triangle_ids_to_voxels_desc = self.baker_config.graphics_programs.get("write_triangle_ids_to_voxels")
           .ok_or(HalaRendererError::new("Failed to get graphics program \"write_triangle_ids_to_voxels\".", None))?;
-        let mut write_triangle_ids_to_voxels_descriptor_set_layouts = vec![&self.baker_resources.static_descriptor_set.layout];
+        let mut write_triangle_ids_to_voxels_descriptor_set_layouts = vec![&self.sdf_baker_resources.static_descriptor_set.layout];
         if !write_triangle_ids_to_voxels_desc.bindings.is_empty() {
-          let write_triangle_ids_to_voxels_descriptor_set = self.baker_resources.descriptor_sets.get("write_triangle_ids_to_voxels")
+          let write_triangle_ids_to_voxels_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("write_triangle_ids_to_voxels")
             .ok_or(HalaRendererError::new("Failed to get the write_triangle_ids_to_voxels descriptor set.", None))?;
           write_triangle_ids_to_voxels_descriptor_set_layouts.push(&write_triangle_ids_to_voxels_descriptor_set.layout);
         }
-        self.baker_resources.write_triangle_ids_to_voxels_programs[i] = Some(HalaGraphicsProgram::with_formats_and_size(
+        self.sdf_baker_resources.write_triangle_ids_to_voxels_programs[i] = Some(HalaGraphicsProgram::with_formats_and_size(
           Rc::clone(&self.resources.context.borrow().logical_device),
           &[hala_gfx::HalaFormat::R8G8B8A8_SRGB],
           None,
@@ -225,7 +225,7 @@ impl SDFBaker {
       index_stride: std::mem::size_of::<u32>() as u32,
     };
     log::debug!("Mesh uniform: {:?}", mesh_uniform);
-    self.baker_resources.mesh_uniform_buffer.update_memory(0, std::slice::from_ref(&mesh_uniform))?;
+    self.sdf_baker_resources.mesh_uniform_buffer.update_memory(0, std::slice::from_ref(&mesh_uniform))?;
 
     // Make 3 views conservative rasterization uniform.
     let (xy_plane_mtx, zx_plane_mtx, yz_plane_mtx) = self.get_camera_matrices(bounds);
@@ -235,17 +235,17 @@ impl SDFBaker {
       conservative_offset: 0.5,
     };
     log::debug!("Conservative rasterization uniform: {:?}", conservative_rasterization_uniform);
-    self.baker_resources.conservative_rasterization_uniform_buffer.update_memory(
+    self.sdf_baker_resources.conservative_rasterization_uniform_buffer.update_memory(
       0,
       std::slice::from_ref(&conservative_rasterization_uniform)
     )?;
 
-    let generate_triangles_uvw_descriptor_set = self.baker_resources.descriptor_sets.get("gen_tri_in_uvw")
+    let generate_triangles_uvw_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("gen_tri_in_uvw")
       .ok_or(HalaRendererError::new("Failed to get the generate_triangles_uvw descriptor set.", None))?;
     generate_triangles_uvw_descriptor_set.update_uniform_buffers(
       0,
       0,
-      &[&self.baker_resources.mesh_uniform_buffer],
+      &[&self.sdf_baker_resources.mesh_uniform_buffer],
     );
     generate_triangles_uvw_descriptor_set.update_storage_buffers(
       0,
@@ -262,12 +262,12 @@ impl SDFBaker {
       3,
       &[triangle_uvw_buffer],
     );
-    let calculate_triangles_direction_descriptor_set = self.baker_resources.descriptor_sets.get("cal_tri_dir")
+    let calculate_triangles_direction_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("cal_tri_dir")
       .ok_or(HalaRendererError::new("Failed to get the calculate_triangles_direction descriptor set.", None))?;
     calculate_triangles_direction_descriptor_set.update_uniform_buffers(
       0,
       0,
-      &[&self.baker_resources.mesh_uniform_buffer],
+      &[&self.sdf_baker_resources.mesh_uniform_buffer],
     );
     calculate_triangles_direction_descriptor_set.update_storage_buffers(
       0,
@@ -284,12 +284,12 @@ impl SDFBaker {
       3,
       &[coord_flip_buffer],
     );
-    let conservative_rasterization_descriptor_set = self.baker_resources.descriptor_sets.get("conservative_rasterization")
+    let conservative_rasterization_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("conservative_rasterization")
       .ok_or(HalaRendererError::new("Failed to get the conservative_rasterization descriptor set.", None))?;
     conservative_rasterization_descriptor_set.update_uniform_buffers(
       0,
       0,
-      &[&self.baker_resources.mesh_uniform_buffer],
+      &[&self.sdf_baker_resources.mesh_uniform_buffer],
     );
     conservative_rasterization_descriptor_set.update_storage_buffers(
       0,
@@ -304,7 +304,7 @@ impl SDFBaker {
     conservative_rasterization_descriptor_set.update_uniform_buffers(
       0,
       3,
-      &[&self.baker_resources.conservative_rasterization_uniform_buffer],
+      &[&self.sdf_baker_resources.conservative_rasterization_uniform_buffer],
     );
     conservative_rasterization_descriptor_set.update_storage_buffers(
       0,
@@ -321,7 +321,7 @@ impl SDFBaker {
       6,
       &[vertices_buffer],
     );
-    let write_uvw_and_coverage_descriptor_set = self.baker_resources.descriptor_sets.get("write_uvw_and_coverage")
+    let write_uvw_and_coverage_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("write_uvw_and_coverage")
       .ok_or(HalaRendererError::new("Failed to get the write_uvw_and_coverage descriptor set.", None))?;
     write_uvw_and_coverage_descriptor_set.update_storage_buffers(
       0,
@@ -348,7 +348,7 @@ impl SDFBaker {
       4,
       &[counters_buffer],
     );
-    let write_triangle_ids_to_voxels_descriptor_set = self.baker_resources.descriptor_sets.get("write_triangle_ids_to_voxels")
+    let write_triangle_ids_to_voxels_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("write_triangle_ids_to_voxels")
       .ok_or(HalaRendererError::new("Failed to get the write_triangle_ids_to_voxels descriptor set.", None))?;
     write_triangle_ids_to_voxels_descriptor_set.update_storage_buffers(
       0,
@@ -425,13 +425,13 @@ impl SDFBaker {
 
     // Generate triangles UVW.
     {
-      let generate_triangles_uvw_program = self.baker_resources.compute_programs.get("gen_tri_in_uvw")
+      let generate_triangles_uvw_program = self.sdf_baker_resources.compute_programs.get("gen_tri_in_uvw")
         .ok_or(HalaRendererError::new("Failed to get the generate_triangles_uvw program.", None))?;
       generate_triangles_uvw_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           generate_triangles_uvw_descriptor_set,
         ],
       );
@@ -446,13 +446,13 @@ impl SDFBaker {
 
     // Calculate triangles direction.
     {
-      let calculate_triangles_direction_program = self.baker_resources.compute_programs.get("cal_tri_dir")
+      let calculate_triangles_direction_program = self.sdf_baker_resources.compute_programs.get("cal_tri_dir")
         .ok_or(HalaRendererError::new("Failed to get the calculate_triangles_direction program.", None))?;
       calculate_triangles_direction_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           calculate_triangles_direction_descriptor_set,
         ],
       );
@@ -500,13 +500,13 @@ impl SDFBaker {
 
     // Conservative rasterization.
     {
-      let conservative_rasterization_program = self.baker_resources.compute_programs.get("conservative_rasterization")
+      let conservative_rasterization_program = self.sdf_baker_resources.compute_programs.get("conservative_rasterization")
         .ok_or(HalaRendererError::new("Failed to get the conservative_rasterization program.", None))?;
       conservative_rasterization_program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           conservative_rasterization_descriptor_set,
         ],
       );
@@ -642,7 +642,7 @@ impl SDFBaker {
           ]);
 
         // Draw.
-        let write_uvw_and_coverage_program = self.baker_resources.write_uvw_and_coverage_programs[axis]
+        let write_uvw_and_coverage_program = self.sdf_baker_resources.write_uvw_and_coverage_programs[axis]
           .as_ref()
           .ok_or(HalaRendererError::new("Failed to get the write_uvw_and_coverage program.", None))?;
 
@@ -650,7 +650,7 @@ impl SDFBaker {
           0,
           command_buffers,
           &[
-            self.baker_resources.static_descriptor_set.as_ref(),
+            self.sdf_baker_resources.static_descriptor_set.as_ref(),
             write_uvw_and_coverage_descriptor_set,
           ],
         );
@@ -772,7 +772,7 @@ impl SDFBaker {
           ]);
 
         // Draw.
-        let write_triangle_ids_to_voxels_program = self.baker_resources.write_triangle_ids_to_voxels_programs[axis]
+        let write_triangle_ids_to_voxels_program = self.sdf_baker_resources.write_triangle_ids_to_voxels_programs[axis]
           .as_ref()
           .ok_or(HalaRendererError::new("Failed to get the write_triangle_ids_to_voxels program.", None))?;
 
@@ -780,7 +780,7 @@ impl SDFBaker {
           0,
           command_buffers,
           &[
-            self.baker_resources.static_descriptor_set.as_ref(),
+            self.sdf_baker_resources.static_descriptor_set.as_ref(),
             write_triangle_ids_to_voxels_descriptor_set,
           ],
         );

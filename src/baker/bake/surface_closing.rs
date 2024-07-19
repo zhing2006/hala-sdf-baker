@@ -10,13 +10,13 @@ impl SDFBaker {
     &mut self,
     dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
-    if let Some(voxels_texture) = &self.baker_resources.voxels_texture {
+    if let Some(voxels_texture) = &self.sdf_baker_resources.voxels_texture {
       if voxels_texture.extent.width != dimensions[0] || voxels_texture.extent.height != dimensions[1] || voxels_texture.extent.depth != dimensions[2] {
-        self.baker_resources.voxels_texture = None;
+        self.sdf_baker_resources.voxels_texture = None;
       }
     }
-    if self.baker_resources.voxels_texture.is_none() {
-      self.baker_resources.voxels_texture = Some(
+    if self.sdf_baker_resources.voxels_texture.is_none() {
+      self.sdf_baker_resources.voxels_texture = Some(
         hala_gfx::HalaImage::new_3d(
           Rc::clone(&self.resources.context.borrow().logical_device),
           hala_gfx::HalaImageUsageFlags::SAMPLED | hala_gfx::HalaImageUsageFlags::STORAGE,
@@ -30,13 +30,13 @@ impl SDFBaker {
       );
     }
 
-    if let Some(voxels_texture_bis) = &self.baker_resources.voxels_texture_bis {
+    if let Some(voxels_texture_bis) = &self.sdf_baker_resources.voxels_texture_bis {
       if voxels_texture_bis.extent.width != dimensions[0] || voxels_texture_bis.extent.height != dimensions[1] || voxels_texture_bis.extent.depth != dimensions[2] {
-        self.baker_resources.voxels_texture_bis = None;
+        self.sdf_baker_resources.voxels_texture_bis = None;
       }
     }
-    if self.baker_resources.voxels_texture_bis.is_none() {
-      self.baker_resources.voxels_texture_bis = Some(
+    if self.sdf_baker_resources.voxels_texture_bis.is_none() {
+      self.sdf_baker_resources.voxels_texture_bis = Some(
         hala_gfx::HalaImage::new_3d(
           Rc::clone(&self.resources.context.borrow().logical_device),
           hala_gfx::HalaImageUsageFlags::SAMPLED | hala_gfx::HalaImageUsageFlags::STORAGE,
@@ -68,7 +68,7 @@ impl SDFBaker {
     ),
     HalaRendererError
   > {
-    let in_out_edge_descriptor_set = self.baker_resources.descriptor_sets.get("in_out_edge")
+    let in_out_edge_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("in_out_edge")
       .ok_or(HalaRendererError::new("Failed to get the in_out_edge descriptor set.", None))?;
     in_out_edge_descriptor_set.update_sampled_images(
       0,
@@ -81,7 +81,7 @@ impl SDFBaker {
       &[voxels_texture],
     );
 
-    let buffer_2_image_descriptor_set = self.baker_resources.descriptor_sets.get("buffer_2_image")
+    let buffer_2_image_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("buffer_2_image")
       .ok_or(HalaRendererError::new("Failed to get the buffer_2_image descriptor set.", None))?;
     buffer_2_image_descriptor_set.update_storage_buffers(
       0,
@@ -94,7 +94,7 @@ impl SDFBaker {
       &[voxels_texture],
     );
 
-    let jfa_descriptor_set = self.baker_resources.descriptor_sets.get("jfa")
+    let jfa_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("jfa")
       .ok_or(HalaRendererError::new("Failed to get the jfa descriptor set.", None))?;
     jfa_descriptor_set.update_storage_images(
       0,
@@ -107,7 +107,7 @@ impl SDFBaker {
       &[voxels_texture_bis],
     );
 
-    let jfa_2_descriptor_set = self.baker_resources.descriptor_sets.get("jfa_2")
+    let jfa_2_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("jfa_2")
       .ok_or(HalaRendererError::new("Failed to get the jfa_2 descriptor set.", None))?;
     jfa_2_descriptor_set.update_storage_images(
       0,
@@ -174,7 +174,7 @@ impl SDFBaker {
 
     // Find in out edge by threshold.
     {
-      let program = self.baker_resources.compute_programs.get("in_out_edge")
+      let program = self.sdf_baker_resources.compute_programs.get("in_out_edge")
         .ok_or(HalaRendererError::new("Failed to get the in_out_edge compute program.", None))?;
 
       let threshold = if self.settings.sign_passes_count == 0 {
@@ -187,7 +187,7 @@ impl SDFBaker {
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           in_out_edge_descriptor_set,
         ],
       );
@@ -246,14 +246,14 @@ impl SDFBaker {
 
     // Buffer to texture.
     {
-      let program = self.baker_resources.compute_programs.get("buffer_2_image")
+      let program = self.sdf_baker_resources.compute_programs.get("buffer_2_image")
         .ok_or(HalaRendererError::new("Failed to get the buffer_2_image compute program.", None))?;
 
       program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           buffer_2_image_descriptor_set,
         ],
       );
@@ -299,14 +299,14 @@ impl SDFBaker {
 
     // JFA pass 1.
     {
-      let program = self.baker_resources.compute_programs.get("jfa")
+      let program = self.sdf_baker_resources.compute_programs.get("jfa")
         .ok_or(HalaRendererError::new("Failed to get the jfa compute program.", None))?;
 
       program.bind(
         0,
         command_buffers,
         &[
-          &self.baker_resources.static_descriptor_set,
+          &self.sdf_baker_resources.static_descriptor_set,
           jfa_descriptor_set,
         ],
       );
@@ -345,7 +345,7 @@ impl SDFBaker {
     // JFA 2 to N passes.
     let num_of_passes = self.settings.max_resolution.ilog2();
     {
-      let program = self.baker_resources.compute_programs.get("jfa")
+      let program = self.sdf_baker_resources.compute_programs.get("jfa")
         .ok_or(HalaRendererError::new("Failed to get the jfa compute program.", None))?;
 
       let get_jfa_descriptor_set = |i: u32| -> &hala_gfx::HalaDescriptorSet {
@@ -387,7 +387,7 @@ impl SDFBaker {
           0,
           command_buffers,
           &[
-            &self.baker_resources.static_descriptor_set,
+            &self.sdf_baker_resources.static_descriptor_set,
             get_jfa_descriptor_set(level),
           ],
         );

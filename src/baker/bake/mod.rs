@@ -12,7 +12,7 @@ use crate::baker::{
   SDFBakerResources,
 };
 
-use crate::baker::resources::SDFBakerCSGlobalUniform;
+use crate::baker::sdf_resources::SDFBakerCSGlobalUniform;
 
 pub mod initialize;
 pub mod build_geometry;
@@ -286,7 +286,7 @@ impl SDFBaker {
   }
 
   /// Bake the SDF.
-  pub fn bake(&mut self) -> Result<(), HalaRendererError> {
+  pub fn bake_sdf(&mut self) -> Result<(), HalaRendererError> {
     let primitive = self.get_selected_mesh_primitive()?;
 
     // Setup.
@@ -306,50 +306,50 @@ impl SDFBaker {
 
     // Create buffers and images.
     self.create_buffers_images(num_of_triangles, &dimensions, upper_bound_count)?;
-    let triangle_uvw_buffer = self.baker_resources.triangle_uvw_buffer.as_ref()
+    let triangle_uvw_buffer = self.sdf_baker_resources.triangle_uvw_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the triangle_uvw buffer.", None))?;
-    let coord_flip_buffer = self.baker_resources.coord_flip_buffer.as_ref()
+    let coord_flip_buffer = self.sdf_baker_resources.coord_flip_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the coord_flip buffer.", None))?;
-    let aabb_buffer = self.baker_resources.aabb_buffer.as_ref()
+    let aabb_buffer = self.sdf_baker_resources.aabb_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the aabb buffer.", None))?;
-    let vertices_buffer = self.baker_resources.vertices_buffer.as_ref()
+    let vertices_buffer = self.sdf_baker_resources.vertices_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the vertices buffer.", None))?;
-    let voxels_buffer = self.baker_resources.voxels_buffer.as_ref()
+    let voxels_buffer = self.sdf_baker_resources.voxels_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the voxels buffer.", None))?;
-    let counters_buffer = self.baker_resources.counters_buffer.as_ref()
+    let counters_buffer = self.sdf_baker_resources.counters_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the counters buffer.", None))?;
-    let in_sum_blocks_buffer = self.baker_resources.in_sum_blocks_buffer.as_ref()
+    let in_sum_blocks_buffer = self.sdf_baker_resources.in_sum_blocks_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the in_sum_blocks buffer.", None))?;
-    let sum_blocks_buffer = self.baker_resources.sum_blocks_buffer.as_ref()
+    let sum_blocks_buffer = self.sdf_baker_resources.sum_blocks_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the sum_blocks buffer.", None))?;
-    let accum_sum_blocks_buffer = self.baker_resources.accum_sum_blocks_buffer.as_ref()
+    let accum_sum_blocks_buffer = self.sdf_baker_resources.accum_sum_blocks_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the accum_sum_blocks buffer.", None))?;
-    let accum_counters_buffer = self.baker_resources.accum_counters_buffer.as_ref()
+    let accum_counters_buffer = self.sdf_baker_resources.accum_counters_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the accum_counters buffer.", None))?;
-    let tmp_buffer = self.baker_resources.tmp_buffer.as_ref()
+    let tmp_buffer = self.sdf_baker_resources.tmp_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the tmp buffer.", None))?;
-    let additional_sum_blocks_buffer = self.baker_resources.additional_sum_blocks_buffer.as_ref()
+    let additional_sum_blocks_buffer = self.sdf_baker_resources.additional_sum_blocks_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the additional_sum_blocks buffer.", None))?;
-    let triangles_in_voxels_buffer = self.baker_resources.triangles_in_voxels_buffer.as_ref()
+    let triangles_in_voxels_buffer = self.sdf_baker_resources.triangles_in_voxels_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the triangles_in_voxels buffer.", None))?;
-    let ray_map = self.baker_resources.ray_map.as_ref()
+    let ray_map = self.sdf_baker_resources.ray_map.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the ray_map.", None))?;
-    let sign_map = self.baker_resources.sign_map.as_ref()
+    let sign_map = self.sdf_baker_resources.sign_map.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the sign_map.", None))?;
-    let sign_map_bis = self.baker_resources.sign_map_bis.as_ref()
+    let sign_map_bis = self.sdf_baker_resources.sign_map_bis.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the sign_map_bis.", None))?;
-    let voxels_texture = self.baker_resources.voxels_texture.as_ref()
+    let voxels_texture = self.sdf_baker_resources.voxels_texture.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the voxels_texture.", None))?;
-    let voxels_texture_bis = self.baker_resources.voxels_texture_bis.as_ref()
+    let voxels_texture_bis = self.sdf_baker_resources.voxels_texture_bis.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the voxels_texture_bis.", None))?;
-    let distance_texture = self.baker_resources.distance_texture.as_ref()
+    let distance_texture = self.sdf_baker_resources.distance_texture.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the distance_texture.", None))?;
     let render_targets = [
-      self.baker_resources.render_targets[0].as_ref()
+      self.sdf_baker_resources.render_targets[0].as_ref()
         .ok_or(HalaRendererError::new("Failed to get the render_target 0.", None))?,
-      self.baker_resources.render_targets[1].as_ref()
+      self.sdf_baker_resources.render_targets[1].as_ref()
         .ok_or(HalaRendererError::new("Failed to get the render_target 1.", None))?,
-      self.baker_resources.render_targets[2].as_ref()
+      self.sdf_baker_resources.render_targets[2].as_ref()
         .ok_or(HalaRendererError::new("Failed to get the render_target 2.", None))?,
     ];
     let bounds = self.settings.get_bounds();
@@ -368,33 +368,33 @@ impl SDFBaker {
       max_bounds_extended: bounds.get_max(),
     };
     log::debug!("Global uniform: {:?}", global_uniform);
-    self.baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
+    self.sdf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
 
     // Update the descriptor sets.
-    for (index, descriptor_set) in self.baker_resources.image_2_screen_descriptor_sets.iter().enumerate() {
+    for (index, descriptor_set) in self.sdf_baker_resources.image_2_screen_descriptor_sets.iter().enumerate() {
       descriptor_set.update_combined_image_samplers(
         0,
         0,
-        &[(render_targets[index], self.baker_resources.image_2_screen_sampler.as_ref())],
+        &[(render_targets[index], self.sdf_baker_resources.image_2_screen_sampler.as_ref())],
       );
     }
-    self.baker_resources.cross_xyz_descriptor_set.update_combined_image_samplers(
+    self.sdf_baker_resources.cross_xyz_descriptor_set.update_combined_image_samplers(
       0,
       0,
       &[
-        (distance_texture, self.baker_resources.image3d_sampler.as_ref())
+        (distance_texture, self.sdf_baker_resources.image3d_sampler.as_ref())
       ],
     );
-    self.baker_resources.sdf_visualization_descriptor_set.update_uniform_buffers(
+    self.sdf_baker_resources.sdf_visualization_descriptor_set.update_uniform_buffers(
       0,
       0,
-      &[self.baker_resources.sdf_visualization_uniform_buffer.as_ref()],
+      &[self.sdf_baker_resources.sdf_visualization_uniform_buffer.as_ref()],
     );
-    self.baker_resources.sdf_visualization_descriptor_set.update_combined_image_samplers(
+    self.sdf_baker_resources.sdf_visualization_descriptor_set.update_combined_image_samplers(
       0,
       1,
       &[
-        (distance_texture, self.baker_resources.image3d_sampler.as_ref())
+        (distance_texture, self.sdf_baker_resources.image3d_sampler.as_ref())
       ],
     );
 
