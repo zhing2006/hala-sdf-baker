@@ -1,3 +1,21 @@
 compute_programs:
+  udf_init:
+    shader_file_path: /baker/udf_init.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_image
+  udf_final:
+    shader_file_path: /baker/udf_final.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_image
+  splat_triangle_distance:
+    shader_file_path: /udf/splat_triangle_distance.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - uniform_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_image
 
 graphics_programs:

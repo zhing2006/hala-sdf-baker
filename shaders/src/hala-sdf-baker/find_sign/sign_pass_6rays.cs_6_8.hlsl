@@ -1,4 +1,4 @@
-#include "../baker/baker.hlsl"
+#include "../baker/sdf_baker.hlsl"
 
 [[vk::binding(0, 1)]]
 Texture3D<float4> _ray_map;

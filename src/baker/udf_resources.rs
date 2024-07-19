@@ -12,9 +12,11 @@ use crate::config;
 #[derive(Debug, Clone, Copy)]
 pub(super) struct UDFBakerCSGlobalUniform {
   pub i_m_mtx: glam::Mat4,
+  pub dimensions: [u32; 3],
+  pub num_of_voxels: u32,
+  pub num_of_triangles: u32,
   pub max_distance: f32,
   pub initial_distance: f32,
-  pub dispatch_size_x: u32,
 }
 
 #[repr(C, align(16))]
@@ -44,9 +46,6 @@ pub(crate) struct UDFBakerResources {
 
 /// The implementation of UDF baker resources.
 impl UDFBakerResources {
-
-  pub const THREAD_GROUP_SIZE: u32 = 64;
-  pub const MAX_THREAD_GROUPS: u32 = 65535;
 
   /// Create a new UDF baker resources.
   /// param logical_device: The logical device.

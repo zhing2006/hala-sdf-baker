@@ -74,27 +74,40 @@ impl SDFBaker {
     &self,
     distance_texture: &hala_gfx::HalaImage,
   ) -> Result<
-    &hala_gfx::HalaDescriptorSet,
+    (
+      &hala_gfx::HalaDescriptorSet,
+      &hala_gfx::HalaDescriptorSet,
+    ),
     HalaRendererError
   > {
-    let descriptor_set = self.udf_baker_resources.descriptor_sets.get("udf_init")
+    let initialize_descriptor_set = self.udf_baker_resources.descriptor_sets.get("udf_init")
       .ok_or(HalaRendererError::new("Failed to get the initialize descriptor set.", None))?;
-    descriptor_set.update_storage_images(
+    initialize_descriptor_set.update_storage_images(
       0,
       0,
       &[distance_texture],
     );
 
-    Ok(descriptor_set)
+    let finalize_descriptor_set = self.udf_baker_resources.descriptor_sets.get("udf_final")
+      .ok_or(HalaRendererError::new("Failed to get the finalize descriptor set.", None))?;
+    finalize_descriptor_set.update_storage_images(
+      0,
+      0,
+      &[distance_texture],
+    );
+
+    Ok((
+      initialize_descriptor_set,
+      finalize_descriptor_set,
+    ))
   }
 
-  pub(super) fn udf_initialize_compute(
+  pub(super) fn udf_initialize_compute_pass_1(
     &self,
     command_buffers: &hala_gfx::HalaCommandBufferSet,
     distance_texture: &hala_gfx::HalaImage,
     descriptor_set: &hala_gfx::HalaDescriptorSet,
-    dispatch_size_x: u32,
-    dispatch_size_y: u32,
+    dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
     command_buffers.set_image_barriers(
       0,
@@ -104,6 +117,7 @@ impl SDFBaker {
           new_layout: hala_gfx::HalaImageLayout::GENERAL,
           src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
           dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+          aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
           image: distance_texture.raw,
           ..Default::default()
         },
@@ -123,9 +137,54 @@ impl SDFBaker {
     program.dispatch(
       0,
       command_buffers,
-      dispatch_size_x,
-      dispatch_size_y,
-      1,
+      (dimensions[0] + 8 - 1) / 8,
+      (dimensions[1] + 8 - 1) / 8,
+      (dimensions[2] + 8 - 1) / 8,
+    );
+
+    Ok(())
+  }
+
+  pub(super) fn udf_initialize_compute_pass_2(
+    &self,
+    command_buffers: &hala_gfx::HalaCommandBufferSet,
+    distance_texture: &hala_gfx::HalaImage,
+    descriptor_set: &hala_gfx::HalaDescriptorSet,
+    dimensions: &[u32; 3],
+  ) -> Result<(), HalaRendererError> {
+    command_buffers.set_image_barriers(
+      0,
+      &[
+        hala_gfx::HalaImageBarrierInfo {
+          old_layout: hala_gfx::HalaImageLayout::UNDEFINED,
+          new_layout: hala_gfx::HalaImageLayout::GENERAL,
+          src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+          src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
+          dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+          dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
+          aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
+          image: distance_texture.raw,
+          ..Default::default()
+        },
+      ],
+    );
+
+    let program = self.udf_baker_resources.compute_programs.get("udf_final")
+      .ok_or(HalaRendererError::new("Failed to get the finalize program.", None))?;
+    program.bind(
+      0,
+      command_buffers,
+      &[
+        &self.udf_baker_resources.static_descriptor_set,
+        descriptor_set,
+      ]
+    );
+    program.dispatch(
+      0,
+      command_buffers,
+      (dimensions[0] + 8 - 1) / 8,
+      (dimensions[1] + 8 - 1) / 8,
+      (dimensions[2] + 8 - 1) / 8,
     );
 
     Ok(())

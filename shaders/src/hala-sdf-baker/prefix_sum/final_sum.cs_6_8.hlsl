@@ -1,3 +1,4 @@
+#include "../baker/sdf_baker.hlsl"
 #include "prefix_sum.hlsl"
 
 [numthreads(THREAD_GROUP_SIZE, 1, 1)]

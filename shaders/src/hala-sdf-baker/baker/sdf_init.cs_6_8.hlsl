@@ -1,4 +1,4 @@
-#include "baker.hlsl"
+#include "sdf_baker.hlsl"
 
 [[vk::binding(0, 1)]]
 RWStructuredBuffer<float4> _voxels_buffer_rw;
@@ -34,7 +34,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   //   printf("_dimensions: %d %d %d\n", _dimensions.x, _dimensions.y, _dimensions.z);
   //   printf("_max_dimension: %d\n", _max_dimension);
   //   printf("_upper_bound_count: %d\n", _upper_bound_count);
-  //   printf("_num_triangles: %d\n", _num_triangles);
+  //   printf("_num_of_triangles: %d\n", _num_of_triangles);
   //   printf("_max_extent: %f\n", _max_extent);
   //   printf("_min_bounds_extended: %f %f %f\n", _min_bounds_extended.x, _min_bounds_extended.y, _min_bounds_extended.z);
   //   printf("_max_bounds_extended: %f %f %f\n", _max_bounds_extended.x, _max_bounds_extended.y, _max_bounds_extended.z);

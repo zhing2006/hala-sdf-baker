@@ -52,9 +52,8 @@ impl SDFBaker {
     &self,
     command_buffers: &hala_gfx::HalaCommandBufferSet,
     distance_texture: &hala_gfx::HalaImage,
-    descriptor_set: &hala_gfx::HalaDescriptorSet,
-    dispatch_size_x: u32,
-    dispatch_size_y: u32,
+    _descriptor_set: &hala_gfx::HalaDescriptorSet,
+    _dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
     command_buffers.set_image_barriers(
       0,
@@ -66,29 +65,30 @@ impl SDFBaker {
           src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
           dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
           dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
+          aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
           image: distance_texture.raw,
           ..Default::default()
         },
       ],
     );
 
-    let program = self.udf_baker_resources.compute_programs.get("splat_triangle_distance")
-      .ok_or(HalaRendererError::new("Failed to get the splat_triangle_distance program.", None))?;
-    program.bind(
-      0,
-      command_buffers,
-      &[
-        &self.udf_baker_resources.static_descriptor_set,
-        descriptor_set,
-      ]
-    );
-    program.dispatch(
-      0,
-      command_buffers,
-      dispatch_size_x,
-      dispatch_size_y,
-      1,
-    );
+    // let program = self.udf_baker_resources.compute_programs.get("splat_triangle_distance")
+    //   .ok_or(HalaRendererError::new("Failed to get the splat_triangle_distance program.", None))?;
+    // program.bind(
+    //   0,
+    //   command_buffers,
+    //   &[
+    //     &self.udf_baker_resources.static_descriptor_set,
+    //     descriptor_set,
+    //   ]
+    // );
+    // program.dispatch(
+    //   0,
+    //   command_buffers,
+    //   dispatch_size_x,
+    //   dispatch_size_y,
+    //   1,
+    // );
 
     Ok(())
   }

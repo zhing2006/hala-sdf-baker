@@ -10,7 +10,6 @@ use crate::baker::{
   Axis,
   SDFBaker,
   SDFBakerResources,
-  UDFBakerResources,
 };
 
 use crate::baker::sdf_resources::SDFBakerCSGlobalUniform;
@@ -663,21 +662,13 @@ impl SDFBaker {
 
   /// Bake the UDF.
   pub fn bake_udf(&mut self) -> Result<(), HalaRendererError> {
+    let primitive = self.get_selected_mesh_primitive()?;
+
     // Setup.
+    let num_of_triangles = primitive.index_count / 3;
     let max_distance = (self.settings.actual_size[0] * self.settings.actual_size[1] * self.settings.actual_size[2]).powf(1.0 / 3.0);
     let dimensions = self.estimate_grid_size();
     let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
-    let thread_groups = (num_of_voxels + UDFBakerResources::THREAD_GROUP_SIZE - 1) / UDFBakerResources::THREAD_GROUP_SIZE;
-    let (dispatch_size_x, dispatch_size_y) = if thread_groups > UDFBakerResources::MAX_THREAD_GROUPS {
-      // Make it roughly square-ish as a heuristic to avoid too many unused at the end.
-      let dispatch_size_x = (thread_groups as f32).sqrt().ceil() as u32;
-      (
-        dispatch_size_x,
-        (thread_groups as f32 / dispatch_size_x as f32).ceil() as u32,
-      )
-    } else {
-      (thread_groups, 1)
-    };
 
     // Create buffers and images.
     self.create_udf_buffers_images(num_of_voxels, &dimensions)?;
@@ -694,9 +685,11 @@ impl SDFBaker {
     // Update uniform buffers.
     let global_uniform = UDFBakerCSGlobalUniform {
       i_m_mtx: self.get_model_matrix_in_scene(self.settings.selected_mesh_index).inverse(),
+      dimensions,
+      num_of_voxels,
+      num_of_triangles,
       max_distance,
       initial_distance: max_distance * 1.01,
-      dispatch_size_x,
     };
     log::debug!("Global uniform: {:?}", global_uniform);
     self.udf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
@@ -711,7 +704,10 @@ impl SDFBaker {
     );
 
     // Update the descriptor sets.
-    let initialize_descriptor_set = self.udf_initialize_update(
+    let (
+      initialize_descriptor_set,
+      finalize_descriptor_set,
+    ) = self.udf_initialize_update(
       distance_texture,
     )?;
     let splat_triangle_distance_descriptor_set = self.splat_triangle_distance_update(
@@ -726,12 +722,11 @@ impl SDFBaker {
     command_buffers.begin(0, hala_gfx::HalaCommandBufferUsageFlags::ONE_TIME_SUBMIT)?;
 
     // Initialize.
-    self.udf_initialize_compute(
+    self.udf_initialize_compute_pass_1(
       command_buffers,
       distance_texture,
       initialize_descriptor_set,
-      dispatch_size_x,
-      dispatch_size_y,
+      &dimensions,
     )?;
 
     // Splat triangle distance.
@@ -739,8 +734,15 @@ impl SDFBaker {
       command_buffers,
       distance_texture,
       splat_triangle_distance_descriptor_set,
-      dispatch_size_x,
-      dispatch_size_y,
+      &dimensions,
+    )?;
+
+    // Finialize
+    self.udf_initialize_compute_pass_2(
+      command_buffers,
+      distance_texture,
+      finalize_descriptor_set,
+      &dimensions,
     )?;
 
     command_buffers.end(0)?;

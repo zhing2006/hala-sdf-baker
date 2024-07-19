@@ -7,20 +7,6 @@ struct PushConstants {
 [[vk::push_constant]]
 PushConstants g_push_constants;
 
-[[vk::binding(0, 0)]]
-cbuffer GlobalUniformBuffer {
-  uint3 _dimensions;
-  uint _max_dimension;
-  uint _upper_bound_count;
-  uint _num_triangles;
-  float _max_extent;
-  float _padding0;
-  float3 _min_bounds_extended;
-  float _padding1;
-  float3 _max_bounds_extended;
-  float _padding2;
-};
-
 [[vk::binding(0, 1)]]
 StructuredBuffer<float4> _vertices_buffer;
 
@@ -43,14 +29,6 @@ struct ToFragment {
   float4 position: SV_Position;
   [[vk::location(0)]] uint triangle_id: TEXCOORD0;
 };
-
-inline uint id3(int i, int j, int k) {
-  return (uint)(i + _dimensions[0] * j + _dimensions[0] * _dimensions[1] * k);
-}
-
-inline uint id3(int3 coord) {
-  return id3(coord.x, coord.y, coord.z);
-}
 
 float2 get_custom_screen_params() {
   if (g_push_constants.current_axis == 1) {

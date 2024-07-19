@@ -1,4 +1,4 @@
-#include "../baker/baker.hlsl"
+#include "../baker/sdf_baker.hlsl"
 
 struct PushConstants {
   int offset;

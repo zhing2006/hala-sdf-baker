@@ -1,4 +1,4 @@
-#include "../baker/baker.hlsl"
+#include "../baker/sdf_baker.hlsl"
 #include "mesh.hlsl"
 
 [[vk::binding(3, 1)]]
@@ -6,7 +6,7 @@ RWStructuredBuffer<uint> _coord_flip_buffer_rw;
 
 [numthreads(64, 1, 1)]
 void main(uint3 id: SV_DispatchThreadID) {
-  if (id.x >= _num_triangles) {
+  if (id.x >= _num_of_triangles) {
     return;
   }
 

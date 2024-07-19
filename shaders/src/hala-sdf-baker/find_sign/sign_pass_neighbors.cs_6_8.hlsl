@@ -1,5 +1,5 @@
 #include "../common/random.hlsl"
-#include "../baker/baker.hlsl"
+#include "../baker/sdf_baker.hlsl"
 
 struct PushConstants {
   float normalize_factor;

@@ -1,4 +1,4 @@
-#include "../baker/baker.hlsl"
+#include "../baker/sdf_baker.hlsl"
 #include "ray_map.hlsl"
 
 [[vk::binding(0, 1)]]

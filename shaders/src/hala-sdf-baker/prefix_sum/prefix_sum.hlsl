@@ -9,20 +9,6 @@ struct PushConstants {
 [[vk::push_constant]]
 PushConstants g_push_constants;
 
-[[vk::binding(0, 0)]]
-cbuffer GlobalUniformBuffer {
-  uint3 _dimensions;
-  uint _max_dimension;
-  uint _upper_bound_count;
-  uint _num_triangles;
-  float _max_extent;
-  float _padding0;
-  float3 _min_bounds_extended;
-  float _padding1;
-  float3 _max_bounds_extended;
-  float _padding2;
-};
-
 [[vk::binding(0, 1)]]
 StructuredBuffer<uint> _input_buffer;
 

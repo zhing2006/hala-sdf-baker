@@ -1,3 +1,4 @@
+#include "../baker/sdf_baker.hlsl"
 #include "draw.hlsl"
 
 struct FragmentOutput {
