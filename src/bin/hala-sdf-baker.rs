@@ -227,7 +227,18 @@ impl HalaApplication for SDFBakerApplication {
               ui.separator();
 
               if ui.button_with_size("Bake", [100.0, 30.0]) {
-                baker.bake_sdf().expect("Failed to bake.");
+                match if baker.settings.is_sdf {
+                  baker.bake_sdf()
+                } else {
+                  baker.bake_udf()
+                } {
+                  Ok(_) => {
+                    log::info!("Bake success.");
+                  },
+                  Err(e) => {
+                    log::error!("Bake failed: {:?}", e);
+                  }
+                }
               }
               ui.same_line();
               if ui.button_with_size("Save", [100.0, 30.0]) {

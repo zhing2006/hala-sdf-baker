@@ -250,31 +250,36 @@ impl SDFBaker {
       )?
     };
 
-    let baker_config = match config::BakerConfig::load("./conf/baker.yaml") {
+    let sdf_baker_config = match config::BakerConfig::load("./conf/sdf_baker.yaml") {
       Ok(config) => config,
       Err(err) => {
-        log::error!("Failed to load baker config: {:?}", err);
-        return Err(HalaRendererError::new("Failed to load baker config.", None));
+        log::error!("Failed to load sdf baker config: {:?}", err);
+        return Err(HalaRendererError::new("Failed to load sdf baker config.", None));
       }
     };
-
     let sdf_baker_resources = SDFBakerResources::new(
       Rc::clone(&resources.context.borrow().logical_device),
       Rc::clone(&resources.descriptor_pool),
       &resources.context.borrow().swapchain,
-      &baker_config,
+      &sdf_baker_config,
       &pipeline_cache,
     )?;
 
+    let udf_baker_config = match config::BakerConfig::load("./conf/udf_baker.yaml") {
+      Ok(config) => config,
+      Err(err) => {
+        log::error!("Failed to load udf baker config: {:?}", err);
+        return Err(HalaRendererError::new("Failed to load udf baker config.", None));
+      }
+    };
     let udf_baker_resources = UDFBakerResources::new(
       Rc::clone(&resources.context.borrow().logical_device),
       Rc::clone(&resources.descriptor_pool),
-      &resources.context.borrow().swapchain,
-      &baker_config,
+      &udf_baker_config,
       &pipeline_cache,
     )?;
 
-    let bounds_desc = baker_config.graphics_programs.get("bounds").ok_or(HalaRendererError::new("Failed to get graphics program \"bounds\".", None))?;
+    let bounds_desc = sdf_baker_config.graphics_programs.get("bounds").ok_or(HalaRendererError::new("Failed to get graphics program \"bounds\".", None))?;
     let bounds_program = HalaGraphicsProgram::new(
       Rc::clone(&resources.context.borrow().logical_device),
       &resources.context.borrow().swapchain,
@@ -300,7 +305,7 @@ impl SDFBaker {
       "cross_xyz.sampler",
     )?;
 
-    let cross_xyz_desc = baker_config.graphics_programs.get("cross_xyz").ok_or(HalaRendererError::new("Failed to get graphics program \"cross_xyz\".", None))?;
+    let cross_xyz_desc = sdf_baker_config.graphics_programs.get("cross_xyz").ok_or(HalaRendererError::new("Failed to get graphics program \"cross_xyz\".", None))?;
     let cross_xyz_bindings = cross_xyz_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
       hala_gfx::HalaDescriptorSetLayoutBinding {
         binding_index: binding_index as u32,
@@ -341,7 +346,7 @@ impl SDFBaker {
       hala_gfx::HalaMemoryLocation::CpuToGpu,
       "sdf_visualization.uniform_buffer",
     )?;
-    let sdf_visualization_desc = baker_config.graphics_programs.get("sdf_visualization")
+    let sdf_visualization_desc = sdf_baker_config.graphics_programs.get("sdf_visualization")
       .ok_or(HalaRendererError::new("Failed to get graphics program \"sdf_visualization\".", None))?;
     let sdf_visualization_bindings = sdf_visualization_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
       hala_gfx::HalaDescriptorSetLayoutBinding {
@@ -392,7 +397,7 @@ impl SDFBaker {
       static_descriptor_set: std::mem::ManuallyDrop::new(static_descriptor_set),
       global_uniform_buffer: std::mem::ManuallyDrop::new(global_uniform_buffer),
 
-      baker_config,
+      baker_config: sdf_baker_config,
       sdf_baker_resources: std::mem::ManuallyDrop::new(sdf_baker_resources),
       udf_baker_resources: std::mem::ManuallyDrop::new(udf_baker_resources),
 

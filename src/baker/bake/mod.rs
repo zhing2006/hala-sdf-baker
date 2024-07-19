@@ -10,17 +10,21 @@ use crate::baker::{
   Axis,
   SDFBaker,
   SDFBakerResources,
+  UDFBakerResources,
 };
 
 use crate::baker::sdf_resources::SDFBakerCSGlobalUniform;
+use crate::baker::udf_resources::UDFBakerCSGlobalUniform;
 
-pub mod initialize;
+pub mod sdf_initialize;
 pub mod build_geometry;
 pub mod prefix_sum;
 pub mod ray_map;
 pub mod find_sign;
 pub mod surface_closing;
 pub mod distance_transform_winding;
+pub mod udf_initialize;
+pub mod splat_triangle_distance;
 
 impl SDFBaker {
 
@@ -259,7 +263,7 @@ impl SDFBaker {
   /// param dimensions: The dimensions of the voxels.
   /// param upper_bound_count: The upper bound count.
   /// return: The result.
-  fn create_buffers_images(
+  fn create_sdf_buffers_images(
     &mut self,
     num_of_triangles: u32,
     dimensions: &[u32; 3],
@@ -305,7 +309,7 @@ impl SDFBaker {
     let num_of_jfa_passes = self.settings.max_resolution.ilog2();
 
     // Create buffers and images.
-    self.create_buffers_images(num_of_triangles, &dimensions, upper_bound_count)?;
+    self.create_sdf_buffers_images(num_of_triangles, &dimensions, upper_bound_count)?;
     let triangle_uvw_buffer = self.sdf_baker_resources.triangle_uvw_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the triangle_uvw buffer.", None))?;
     let coord_flip_buffer = self.sdf_baker_resources.coord_flip_buffer.as_ref()
@@ -398,7 +402,7 @@ impl SDFBaker {
       ],
     );
 
-    let initialize_descriptor_set = self.initialize_update(
+    let initialize_descriptor_set = self.sdf_initialize_update(
       voxels_buffer,
       counters_buffer,
       accum_counters_buffer,
@@ -491,7 +495,7 @@ impl SDFBaker {
     command_buffers.begin(0, hala_gfx::HalaCommandBufferUsageFlags::ONE_TIME_SUBMIT)?;
 
     // Initialize.
-    self.initialize_compute(
+    self.sdf_initialize_compute(
       command_buffers,
       voxels_buffer,
       counters_buffer,
@@ -638,6 +642,116 @@ impl SDFBaker {
       // for i in 0..num_of_triangles {
       //   log::debug!("Triangle[{}] = {:?}, {:?}, {:?}", i, data[i as usize * 3], data[i as usize * 3 + 1], data[i as usize * 3 + 2]);
       // }
+    }
+
+    Ok(())
+  }
+
+  /// Create all buffers and images for the baker.
+  /// param num_of_voxels: The number of triangles.
+  /// param dimensions: The dimensions of the voxels.
+  /// return: The result.
+  fn create_udf_buffers_images(
+    &mut self,
+    num_of_voxels: u32,
+    dimensions: &[u32; 3],
+  ) -> Result<(), HalaRendererError> {
+    self.udf_initialize_create_buffers_images(num_of_voxels, dimensions)?;
+
+    Ok(())
+  }
+
+  /// Bake the UDF.
+  pub fn bake_udf(&mut self) -> Result<(), HalaRendererError> {
+    // Setup.
+    let max_distance = (self.settings.actual_size[0] * self.settings.actual_size[1] * self.settings.actual_size[2]).powf(1.0 / 3.0);
+    let dimensions = self.estimate_grid_size();
+    let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
+    let thread_groups = (num_of_voxels + UDFBakerResources::THREAD_GROUP_SIZE - 1) / UDFBakerResources::THREAD_GROUP_SIZE;
+    let (dispatch_size_x, dispatch_size_y) = if thread_groups > UDFBakerResources::MAX_THREAD_GROUPS {
+      // Make it roughly square-ish as a heuristic to avoid too many unused at the end.
+      let dispatch_size_x = (thread_groups as f32).sqrt().ceil() as u32;
+      (
+        dispatch_size_x,
+        (thread_groups as f32 / dispatch_size_x as f32).ceil() as u32,
+      )
+    } else {
+      (thread_groups, 1)
+    };
+
+    // Create buffers and images.
+    self.create_udf_buffers_images(num_of_voxels, &dimensions)?;
+    let distance_texture = self.udf_baker_resources.distance_texture.as_ref()
+      .ok_or(HalaRendererError::new("Failed to get the distance_texture.", None))?;
+    #[allow(unused_variables)]
+    let jump_buffer = self.udf_baker_resources.jump_buffer.as_ref()
+      .ok_or(HalaRendererError::new("Failed to get the jump_buffer.", None))?;
+    #[allow(unused_variables)]
+    let jump_buffer_bis = self.udf_baker_resources.jump_buffer_bis.as_ref()
+      .ok_or(HalaRendererError::new("Failed to get the jump_buffer_bis.", None))?;
+    let (index_buffer, vertex_buffer) = self.get_selected_mesh_buffers()?;
+
+    // Update uniform buffers.
+    let global_uniform = UDFBakerCSGlobalUniform {
+      i_m_mtx: self.get_model_matrix_in_scene(self.settings.selected_mesh_index).inverse(),
+      max_distance,
+      initial_distance: max_distance * 1.01,
+      dispatch_size_x,
+    };
+    log::debug!("Global uniform: {:?}", global_uniform);
+    self.udf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
+
+    // Update the descriptor sets.
+    self.udf_baker_resources.static_descriptor_set.update_uniform_buffers(
+      0,
+      0,
+      &[
+        &self.udf_baker_resources.global_uniform_buffer
+      ],
+    );
+
+    // Update the descriptor sets.
+    let initialize_descriptor_set = self.udf_initialize_update(
+      distance_texture,
+    )?;
+    let splat_triangle_distance_descriptor_set = self.splat_triangle_distance_update(
+      index_buffer,
+      vertex_buffer,
+      distance_texture,
+    )?;
+
+    // Send commands to the compute queue.
+    let command_buffers = &self.bake_command_buffers;
+    command_buffers.reset(0, false)?;
+    command_buffers.begin(0, hala_gfx::HalaCommandBufferUsageFlags::ONE_TIME_SUBMIT)?;
+
+    // Initialize.
+    self.udf_initialize_compute(
+      command_buffers,
+      distance_texture,
+      initialize_descriptor_set,
+      dispatch_size_x,
+      dispatch_size_y,
+    )?;
+
+    // Splat triangle distance.
+    self.splat_triangle_distance_compute(
+      command_buffers,
+      distance_texture,
+      splat_triangle_distance_descriptor_set,
+      dispatch_size_x,
+      dispatch_size_y,
+    )?;
+
+    command_buffers.end(0)?;
+
+    // Submit & wait.
+    {
+      let context = self.resources.context.borrow();
+      let logical_device = context.logical_device.borrow();
+
+      logical_device.graphics_submit(command_buffers, 0, 0)?;
+      logical_device.graphics_wait(0)?;
     }
 
     Ok(())

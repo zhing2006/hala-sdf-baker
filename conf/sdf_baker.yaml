@@ -1,6 +1,6 @@
 compute_programs:
-  init:
-    shader_file_path: /baker/init.cs_6_8.spv
+  sdf_init:
+    shader_file_path: /baker/sdf_init.cs_6_8.spv
     push_constant_size: 0
     bindings:
       - storage_buffer

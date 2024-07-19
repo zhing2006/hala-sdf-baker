@@ -5,7 +5,7 @@ use crate::baker::SDFBaker;
 impl SDFBaker {
 
   #[allow(clippy::too_many_arguments)]
-  pub(super) fn initialize_update(
+  pub(super) fn sdf_initialize_update(
     &self,
     voxels_buffer: &hala_gfx::HalaBuffer,
     counters_buffer: &hala_gfx::HalaBuffer,
@@ -16,7 +16,7 @@ impl SDFBaker {
     voxels_texture: &hala_gfx::HalaImage,
     voxels_texture_bis: &hala_gfx::HalaImage,
   ) -> Result<&hala_gfx::HalaDescriptorSet, HalaRendererError> {
-    let descriptor_set = self.sdf_baker_resources.descriptor_sets.get("init")
+    let descriptor_set = self.sdf_baker_resources.descriptor_sets.get("sdf_init")
       .ok_or(HalaRendererError::new("Failed to get the initialize descriptor set.", None))?;
     descriptor_set.update_storage_buffers(
       0,
@@ -62,7 +62,7 @@ impl SDFBaker {
     Ok(descriptor_set)
   }
 
-  pub(super) fn initialize_compute(
+  pub(super) fn sdf_initialize_compute(
     &self,
     command_buffers: &hala_gfx::HalaCommandBufferSet,
     voxels_buffer: &hala_gfx::HalaBuffer,
@@ -98,7 +98,7 @@ impl SDFBaker {
       ]
     );
 
-    let program = self.sdf_baker_resources.compute_programs.get("init")
+    let program = self.sdf_baker_resources.compute_programs.get("sdf_init")
       .ok_or(HalaRendererError::new("Failed to get the initialize program.", None))?;
     program.bind(
       0,

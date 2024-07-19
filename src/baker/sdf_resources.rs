@@ -166,7 +166,17 @@ impl SDFBakerResources {
 
     let mut descriptor_sets = HashMap::new();
     let mut compute_programs = HashMap::new();
+    let mut compute_descs = HashMap::new();
     for (name, desc) in baker_config.compute_programs.iter() {
+      compute_descs.insert(name.clone(), desc);
+    }
+    let dup_descriptor_set_names = ["in_bucket_sum", "block_sum", "final_sum", "sign_pass_neighbors", "jfa"];
+    for &descriptor_set_name in dup_descriptor_set_names.iter() {
+      let desc = &baker_config.compute_programs[descriptor_set_name];
+      let name = format!("{}_2", descriptor_set_name);
+      compute_descs.insert(name, desc);
+    }
+    for (name, &desc) in compute_descs.iter() {
       let descriptor_bindings = desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
         hala_gfx::HalaDescriptorSetLayoutBinding {
           binding_index: binding_index as u32,
@@ -179,7 +189,7 @@ impl SDFBakerResources {
 
       let mut descriptor_set_layouts = vec![&static_descriptor_set.layout];
       if !descriptor_bindings.is_empty() {
-        let descriptor_set = hala_gfx::HalaDescriptorSet::new(
+        let descriptor_set = hala_gfx::HalaDescriptorSet::new_static(
           logical_device.clone(),
           descriptor_pool.clone(),
           hala_gfx::HalaDescriptorSetLayout::new(
@@ -187,7 +197,6 @@ impl SDFBakerResources {
             descriptor_bindings.as_slice(),
             &format!("{}.descriptor_set_layout", name),
           )?,
-          swapchain.num_of_images,
           0,
           &format!("{}.descriptor_set", name),
         )?;
@@ -204,36 +213,6 @@ impl SDFBakerResources {
         name,
       )?;
       compute_programs.insert(name.clone(), program);
-    }
-    let dup_descriptor_set_names = ["in_bucket_sum", "block_sum", "final_sum", "sign_pass_neighbors", "jfa"];
-    for &descriptor_set_name in dup_descriptor_set_names.iter() {
-      let desc = &baker_config.compute_programs[descriptor_set_name];
-      let name = format!("{}_2", descriptor_set_name);
-      let descriptor_bindings = desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
-        hala_gfx::HalaDescriptorSetLayoutBinding {
-          binding_index: binding_index as u32,
-          descriptor_type: *binding_type,
-          descriptor_count: 1,
-          stage_flags: hala_gfx::HalaShaderStageFlags::COMPUTE,
-          binding_flags: hala_gfx::HalaDescriptorBindingFlags::PARTIALLY_BOUND
-        }
-      }).collect::<Vec<_>>();
-
-      if !descriptor_bindings.is_empty() {
-        let descriptor_set = hala_gfx::HalaDescriptorSet::new(
-          logical_device.clone(),
-          descriptor_pool.clone(),
-          hala_gfx::HalaDescriptorSetLayout::new(
-            logical_device.clone(),
-            descriptor_bindings.as_slice(),
-            &format!("{}.descriptor_set_layout", name),
-          )?,
-          swapchain.num_of_images,
-          0,
-          &format!("{}.descriptor_set", name),
-        )?;
-        descriptor_sets.insert(name.clone(), descriptor_set);
-      }
     }
 
     let image_2_screen_sampler = hala_gfx::HalaSampler::new(
