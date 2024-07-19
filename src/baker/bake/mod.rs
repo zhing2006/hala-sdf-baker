@@ -68,9 +68,9 @@ impl SDFBaker {
     let max_size = bounds.get_size().iter().fold(0.0, |a: f32, b| a.max(*b));
     let voxel_size = max_size / self.settings.max_resolution as f32;
     let padding = [
-      self.settings.padding[0] as f32 * voxel_size,
-      self.settings.padding[1] as f32 * voxel_size,
-      self.settings.padding[2] as f32 * voxel_size,
+      self.settings.padding[0] * voxel_size,
+      self.settings.padding[1] * voxel_size,
+      self.settings.padding[2] * voxel_size,
     ];
 
     let center = [

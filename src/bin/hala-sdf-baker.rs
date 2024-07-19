@@ -197,10 +197,10 @@ impl HalaApplication for SDFBakerApplication {
                   let _ = ui.input_float3("Desired Size", &mut baker.settings.desired_size).build();
                   let _ = ui.input_float3("Actual Size", &mut baker.settings.actual_size).build();
                 });
-                if ui.input_int3("Padding", &mut baker.settings.padding).build() {
-                  baker.settings.padding[0] = baker.settings.padding[0].max(0);
-                  baker.settings.padding[1] = baker.settings.padding[1].max(0);
-                  baker.settings.padding[2] = baker.settings.padding[2].max(0);
+                if ui.input_float3("Padding", &mut baker.settings.padding).build() {
+                  baker.settings.padding[0] = baker.settings.padding[0].max(0.0);
+                  baker.settings.padding[1] = baker.settings.padding[1].max(0.0);
+                  baker.settings.padding[2] = baker.settings.padding[2].max(0.0);
                   need_to_fit = true;
                   need_to_snap = true;
                 }
