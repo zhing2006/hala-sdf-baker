@@ -1,0 +1,357 @@
+compute_programs:
+  init:
+    shader_file_path: /baker/init.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_image
+      - storage_image
+      - storage_image
+      - storage_image
+      - storage_image
+  gen_tri_in_uvw:
+    shader_file_path: /build_geometry/gen_tri_in_uvw.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - uniform_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+  cal_tri_dir:
+    shader_file_path: /build_geometry/cal_tri_dir.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - uniform_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+  conservative_rasterization:
+    shader_file_path: /build_geometry/conservative_rasterization.cs_6_8.spv
+    push_constant_size: 4
+    bindings:
+      - uniform_buffer
+      - storage_buffer
+      - storage_buffer
+      - uniform_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+  in_bucket_sum:
+    shader_file_path: /prefix_sum/in_bucket_sum.cs_6_8.spv
+    push_constant_size: 12
+    bindings:
+      - storage_buffer
+      - storage_buffer
+  block_sum:
+    shader_file_path: /prefix_sum/block_sum.cs_6_8.spv
+    push_constant_size: 12
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+  final_sum:
+    shader_file_path: /prefix_sum/final_sum.cs_6_8.spv
+    push_constant_size: 12
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+  to_block_sum_buffer:
+    shader_file_path: /prefix_sum/to_block_sum_buffer.cs_6_8.spv
+    push_constant_size: 12
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+  generate_ray_map_local2x2:
+    shader_file_path: /ray_map/generate_ray_map_local2x2.cs_6_8.spv
+    push_constant_size: 12
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_image
+  ray_map_sum_x:
+    shader_file_path: /ray_map/ray_map_sum_x.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_image
+  ray_map_sum_y:
+    shader_file_path: /ray_map/ray_map_sum_y.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_image
+  ray_map_sum_z:
+    shader_file_path: /ray_map/ray_map_sum_z.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_image
+  sign_pass_6rays:
+    shader_file_path: /find_sign/sign_pass_6rays.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - sampled_image
+      - storage_image
+  sign_pass_neighbors:
+    shader_file_path: /find_sign/sign_pass_neighbors.cs_6_8.spv
+    push_constant_size: 16
+    bindings:
+      - sampled_image
+      - sampled_image
+      - storage_image
+  in_out_edge:
+    shader_file_path: /surface_closing/in_out_edge.cs_6_8.spv
+    push_constant_size: 4
+    bindings:
+      - sampled_image
+      - storage_image
+  buffer_2_image:
+    shader_file_path: /surface_closing/buffer_2_image.cs_6_8.spv
+    push_constant_size: 0
+    bindings:
+      - storage_buffer
+      - storage_image
+  jfa:
+    shader_file_path: /surface_closing/jfa.cs_6_8.spv
+    push_constant_size: 4
+    bindings:
+      - storage_image
+      - storage_image
+  distance_transform_winding:
+    shader_file_path: /distance_transform_winding/distance_transform_winding.cs_6_8.spv
+    push_constant_size: 8
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - sampled_image
+      - sampled_image
+      - storage_buffer
+      - storage_image
+
+graphics_programs:
+  rgb_triangle:
+    vertex_shader_file_path: /rgb_triangle.vs_6_0.spv
+    fragment_shader_file_path: /rgb_triangle.ps_6_0.spv
+    push_constant_size: 0
+    bindings:
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: back
+      polygon_mode: fill
+      line_width: 1.0
+    depth_info:
+      test_enable: false
+      write_enable: false
+      compare_op: always
+  image_2_screen:
+    vertex_shader_file_path: /image_2_screen.vs_6_0.spv
+    fragment_shader_file_path: /image_2_screen.ps_6_0.spv
+    push_constant_size: 16  # Offset and Scale.
+    bindings:
+      - combined_image_sampler
+    primitive_topology: triangle_strip
+    color_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: back
+      polygon_mode: fill
+      line_width: 1.0
+    depth_info:
+      test_enable: false
+      write_enable: false
+      compare_op: always
+  bounds:
+    vertex_shader_file_path: /box.vs_6_0.spv
+    fragment_shader_file_path: /box.ps_6_0.spv
+    push_constant_size: 104 # MVP, Center, Extents and Color.
+    bindings:
+    primitive_topology: line_list
+    color_blend:
+      src_factor: src_alpha
+      dst_factor: one_minus_src_alpha
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: none
+      polygon_mode: line
+      line_width: 2.0
+    depth_info:
+      test_enable: true
+      write_enable: true
+      compare_op: greater
+  wireframe:
+    vertex_shader_file_path: /wireframe.vs_6_8.spv
+    fragment_shader_file_path: /wireframe.ps_6_8.spv
+    push_constant_size: 12  # Mesh index, Color(RGBA) and Primitive index.
+    bindings:
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: src_alpha
+      dst_factor: one_minus_src_alpha
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: back
+      polygon_mode: line
+      line_width: 1.0
+    depth_info:
+      test_enable: true
+      write_enable: true
+      compare_op: greater
+  wireframe_debug:
+    vertex_shader_file_path: /wireframe.vs_6_8.spv
+    fragment_shader_file_path: /wireframe.ps_6_8.spv
+    push_constant_size: 12  # Mesh index, Color(RGBA) and Primitive index.
+    bindings:
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: src_alpha
+      dst_factor: one_minus_src_alpha
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: none
+      polygon_mode: line
+      line_width: 1.0
+    depth_info:
+      test_enable: true
+      write_enable: true
+      compare_op: greater_or_equal
+  cross_xyz:
+    vertex_shader_file_path: /cross_xyz.vs_6_0.spv
+    fragment_shader_file_path: /cross_xyz.ps_6_0.spv
+    push_constant_size: 88  # MVP, Center and Extents.
+    bindings:
+      - combined_image_sampler
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: src_alpha
+      dst_factor: one_minus_src_alpha
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: none
+      polygon_mode: fill
+      line_width: 1.0
+    depth_info:
+      test_enable: true
+      write_enable: false
+      compare_op: greater_or_equal
+  sdf_visualization:
+    vertex_shader_file_path: /sdf_visualization.vs_6_8.spv
+    fragment_shader_file_path: /sdf_visualization.ps_6_8.spv
+    push_constant_size: 44  # Center, Extents, Color and Offset.
+    bindings:
+      - uniform_buffer
+      - combined_image_sampler
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: src_alpha
+      dst_factor: one_minus_src_alpha
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: back
+      polygon_mode: fill
+      line_width: 1.0
+    depth_info:
+      test_enable: true
+      write_enable: true
+      compare_op: greater_or_equal
+  write_uvw_and_coverage:
+    vertex_shader_file_path: /build_geometry/draw.vs_6_8.spv
+    fragment_shader_file_path: /build_geometry/write_uvw_and_coverage.ps_6_8.spv
+    push_constant_size: 4
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: none
+      polygon_mode: fill
+      line_width: 1.0
+    depth_info:
+      test_enable: false
+      write_enable: false
+      compare_op: always
+  write_triangle_ids_to_voxels:
+    vertex_shader_file_path: /build_geometry/draw.vs_6_8.spv
+    fragment_shader_file_path: /build_geometry/write_triangle_ids_to_voxels.ps_6_8.spv
+    push_constant_size: 4
+    bindings:
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+      - storage_buffer
+    primitive_topology: triangle_list
+    color_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    alpha_blend:
+      src_factor: one
+      dst_factor: zero
+      op: add
+    rasterizer_info:
+      front_face: counter_clockwise
+      cull_mode: none
+      polygon_mode: fill
+      line_width: 1.0
+    depth_info:
+      test_enable: false
+      write_enable: false
+      compare_op: always

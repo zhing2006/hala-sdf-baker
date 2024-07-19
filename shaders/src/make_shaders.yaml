@@ -1,0 +1,10 @@
+projects:
+  - name: hala-sdf-baker
+    global_macros:
+    optional_macro_combinations:
+      - - SDF_BAKER
+      - - SDF_BAKER
+        - CONSERVATIVE_RASTERIZATION
+  - name: test
+    global_macros:
+    optional_macro_combinations:
