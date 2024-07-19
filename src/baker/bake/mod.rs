@@ -378,23 +378,23 @@ impl SDFBaker {
         &[(render_targets[index], self.sdf_baker_resources.image_2_screen_sampler.as_ref())],
       );
     }
-    self.sdf_baker_resources.cross_xyz_descriptor_set.update_combined_image_samplers(
+    self.cross_xyz_descriptor_set.update_combined_image_samplers(
       0,
       0,
       &[
-        (distance_texture, self.sdf_baker_resources.image3d_sampler.as_ref())
+        (distance_texture, self.image3d_sampler.as_ref())
       ],
     );
-    self.sdf_baker_resources.sdf_visualization_descriptor_set.update_uniform_buffers(
+    self.sdf_visualization_descriptor_set.update_uniform_buffers(
       0,
       0,
-      &[self.sdf_baker_resources.sdf_visualization_uniform_buffer.as_ref()],
+      &[self.sdf_visualization_uniform_buffer.as_ref()],
     );
-    self.sdf_baker_resources.sdf_visualization_descriptor_set.update_combined_image_samplers(
+    self.sdf_visualization_descriptor_set.update_combined_image_samplers(
       0,
       1,
       &[
-        (distance_texture, self.sdf_baker_resources.image3d_sampler.as_ref())
+        (distance_texture, self.image3d_sampler.as_ref())
       ],
     );
 

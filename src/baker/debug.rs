@@ -140,14 +140,14 @@ impl SDFBaker {
     bounds: &HalaBounds,
     mvp_mtx: &[f32; 16],
   ) -> Result<(), HalaRendererError> {
-    self.sdf_baker_resources.cross_xyz_program.bind(
+    self.cross_xyz_program.bind(
       index,
       command_buffers,
-      &[self.sdf_baker_resources.cross_xyz_descriptor_set.as_ref()]
+      &[self.cross_xyz_descriptor_set.as_ref()]
     );
 
     // Push constants.
-    self.sdf_baker_resources.cross_xyz_program.push_constants_f32(
+    self.cross_xyz_program.push_constants_f32(
       index,
       command_buffers,
       0,
@@ -162,7 +162,7 @@ impl SDFBaker {
     );
 
     // Draw planes.
-    self.sdf_baker_resources.cross_xyz_program.draw(
+    self.cross_xyz_program.draw(
       index,
       command_buffers,
       18,
@@ -190,16 +190,16 @@ impl SDFBaker {
     color: &[f32; 4],
     offset: f32,
   ) -> Result<(), HalaRendererError> {
-    self.sdf_baker_resources.sdf_visualization_program.bind(
+    self.sdf_visualization_program.bind(
       index,
       command_buffers,
       &[
-        self.sdf_baker_resources.sdf_visualization_descriptor_set.as_ref()
+        self.sdf_visualization_descriptor_set.as_ref()
       ]
     );
 
     // Push constants.
-    self.sdf_baker_resources.sdf_visualization_program.push_constants_f32(
+    self.sdf_visualization_program.push_constants_f32(
       index,
       command_buffers,
       0,
@@ -212,7 +212,7 @@ impl SDFBaker {
     );
 
     // Draw planes.
-    self.sdf_baker_resources.sdf_visualization_program.draw(
+    self.sdf_visualization_program.draw(
       index,
       command_buffers,
       36,

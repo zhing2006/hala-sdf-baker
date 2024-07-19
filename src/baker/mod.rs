@@ -97,6 +97,15 @@ pub struct SDFBaker {
   pub(crate) data: HalaRendererData,
   pub(crate) statistics: HalaRendererStatistics,
 
+  pub(crate) image3d_sampler: std::mem::ManuallyDrop<hala_gfx::HalaSampler>,
+
+  pub(crate) cross_xyz_descriptor_set: std::mem::ManuallyDrop<hala_gfx::HalaDescriptorSet>,
+  pub(crate) cross_xyz_program: std::mem::ManuallyDrop<HalaGraphicsProgram>,
+
+  pub(crate) sdf_visualization_uniform_buffer: std::mem::ManuallyDrop<hala_gfx::HalaBuffer>,
+  pub(crate) sdf_visualization_descriptor_set: std::mem::ManuallyDrop<hala_gfx::HalaDescriptorSet>,
+  pub(crate) sdf_visualization_program: std::mem::ManuallyDrop<HalaGraphicsProgram>,
+
   pub settings: SDFBakerSettings,
 
   is_rotating_camera: bool,
@@ -119,6 +128,12 @@ impl Drop for SDFBaker {
     self.wireframe_debug_program = None;
     HalaShaderCache::get_instance().borrow_mut().clear();
     unsafe {
+      std::mem::ManuallyDrop::drop(&mut self.sdf_visualization_program);
+      std::mem::ManuallyDrop::drop(&mut self.sdf_visualization_descriptor_set);
+      std::mem::ManuallyDrop::drop(&mut self.sdf_visualization_uniform_buffer);
+      std::mem::ManuallyDrop::drop(&mut self.cross_xyz_program);
+      std::mem::ManuallyDrop::drop(&mut self.cross_xyz_descriptor_set);
+      std::mem::ManuallyDrop::drop(&mut self.image3d_sampler);
       std::mem::ManuallyDrop::drop(&mut self.bounds_program);
       std::mem::ManuallyDrop::drop(&mut self.udf_baker_resources);
       std::mem::ManuallyDrop::drop(&mut self.sdf_baker_resources);
@@ -273,6 +288,96 @@ impl SDFBaker {
       "bounds",
     )?;
 
+    let image3d_sampler = hala_gfx::HalaSampler::new(
+      Rc::clone(&resources.context.borrow().logical_device),
+      (hala_gfx::HalaFilter::LINEAR, hala_gfx::HalaFilter::LINEAR),
+      hala_gfx::HalaSamplerMipmapMode::LINEAR,
+      (hala_gfx::HalaSamplerAddressMode::CLAMP_TO_EDGE, hala_gfx::HalaSamplerAddressMode::CLAMP_TO_EDGE, hala_gfx::HalaSamplerAddressMode::CLAMP_TO_EDGE),
+      0.0,
+      false,
+      1.0,
+      (0.0, 0.0),
+      "cross_xyz.sampler",
+    )?;
+
+    let cross_xyz_desc = baker_config.graphics_programs.get("cross_xyz").ok_or(HalaRendererError::new("Failed to get graphics program \"cross_xyz\".", None))?;
+    let cross_xyz_bindings = cross_xyz_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
+      hala_gfx::HalaDescriptorSetLayoutBinding {
+        binding_index: binding_index as u32,
+        descriptor_type: *binding_type,
+        descriptor_count: 1,
+        stage_flags: hala_gfx::HalaShaderStageFlags::VERTEX | hala_gfx::HalaShaderStageFlags::FRAGMENT,
+        binding_flags: hala_gfx::HalaDescriptorBindingFlags::PARTIALLY_BOUND
+      }
+    }).collect::<Vec<_>>();
+    let cross_xyz_descriptor_set = hala_gfx::HalaDescriptorSet::new_static(
+      Rc::clone(&resources.context.borrow().logical_device),
+      Rc::clone(&resources.descriptor_pool),
+      hala_gfx::HalaDescriptorSetLayout::new(
+        Rc::clone(&resources.context.borrow().logical_device),
+        cross_xyz_bindings.as_slice(),
+        "cross_xyz.descriptor_set_layout",
+      )?,
+      0,
+      "cross_xyz.descriptor_set",
+    )?;
+    let cross_xyz_program = HalaGraphicsProgram::new(
+      Rc::clone(&resources.context.borrow().logical_device),
+      &resources.context.borrow().swapchain,
+      &[&cross_xyz_descriptor_set.layout],
+      hala_gfx::HalaPipelineCreateFlags::default(),
+      &[] as &[hala_gfx::HalaVertexInputAttributeDescription],
+      &[] as &[hala_gfx::HalaVertexInputBindingDescription],
+      &[],
+      cross_xyz_desc,
+      Some(&pipeline_cache),
+      "cross_xyz",
+    )?;
+
+    let sdf_visualization_uniform_buffer = hala_gfx::HalaBuffer::new(
+      Rc::clone(&resources.context.borrow().logical_device),
+      std::mem::size_of::<SDFBakerSDFVisualizationUniform>() as u64,
+      hala_gfx::HalaBufferUsageFlags::UNIFORM_BUFFER,
+      hala_gfx::HalaMemoryLocation::CpuToGpu,
+      "sdf_visualization.uniform_buffer",
+    )?;
+    let sdf_visualization_desc = baker_config.graphics_programs.get("sdf_visualization")
+      .ok_or(HalaRendererError::new("Failed to get graphics program \"sdf_visualization\".", None))?;
+    let sdf_visualization_bindings = sdf_visualization_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
+      hala_gfx::HalaDescriptorSetLayoutBinding {
+        binding_index: binding_index as u32,
+        descriptor_type: *binding_type,
+        descriptor_count: 1,
+        stage_flags: hala_gfx::HalaShaderStageFlags::VERTEX | hala_gfx::HalaShaderStageFlags::FRAGMENT,
+        binding_flags: hala_gfx::HalaDescriptorBindingFlags::PARTIALLY_BOUND
+      }
+    }).collect::<Vec<_>>();
+    let sdf_visualization_descriptor_set = hala_gfx::HalaDescriptorSet::new_static(
+      Rc::clone(&resources.context.borrow().logical_device),
+      Rc::clone(&resources.descriptor_pool),
+      hala_gfx::HalaDescriptorSetLayout::new(
+        Rc::clone(&resources.context.borrow().logical_device),
+        sdf_visualization_bindings.as_slice(),
+        "sdf_visualization.descriptor_set_layout",
+      )?,
+      0,
+      "sdf_visualization.descriptor_set",
+    )?;
+    let sdf_visualization_program = HalaGraphicsProgram::new(
+      Rc::clone(&resources.context.borrow().logical_device),
+      &resources.context.borrow().swapchain,
+      &[
+        &sdf_visualization_descriptor_set.layout
+      ],
+      hala_gfx::HalaPipelineCreateFlags::default(),
+      &[] as &[hala_gfx::HalaVertexInputAttributeDescription],
+      &[] as &[hala_gfx::HalaVertexInputBindingDescription],
+      &[],
+      sdf_visualization_desc,
+      Some(&pipeline_cache),
+      "sdf_visualization",
+    )?;
+
     pipeline_cache.save("./out/pipeline_cache.bin")?;
 
     // Return the SDF baker.
@@ -308,6 +413,15 @@ impl SDFBaker {
       statistics: HalaRendererStatistics::new(),
 
       settings: SDFBakerSettings::default(),
+
+      image3d_sampler: std::mem::ManuallyDrop::new(image3d_sampler),
+
+      cross_xyz_descriptor_set: std::mem::ManuallyDrop::new(cross_xyz_descriptor_set),
+      cross_xyz_program: std::mem::ManuallyDrop::new(cross_xyz_program),
+
+      sdf_visualization_uniform_buffer: std::mem::ManuallyDrop::new(sdf_visualization_uniform_buffer),
+      sdf_visualization_descriptor_set: std::mem::ManuallyDrop::new(sdf_visualization_descriptor_set),
+      sdf_visualization_program: std::mem::ManuallyDrop::new(sdf_visualization_program),
 
       is_rotating_camera: false,
       begin_rotating_camera_x: f32::NAN,
@@ -775,7 +889,7 @@ impl HalaRendererTrait for SDFBaker {
       dimensions: self.estimate_grid_size(),
       inv_resolution: 1.0 / self.settings.max_resolution as f32,
     };
-    self.sdf_baker_resources.sdf_visualization_uniform_buffer.update_memory(0, std::slice::from_ref(&sdf_visualization_uniform))?;
+    self.sdf_visualization_uniform_buffer.update_memory(0, std::slice::from_ref(&sdf_visualization_uniform))?;
 
     // Update the SDF baker.
     self.record_command_buffer(

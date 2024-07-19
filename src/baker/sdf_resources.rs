@@ -96,15 +96,6 @@ pub(crate) struct SDFBakerResources {
   pub(crate) image_2_screen_descriptor_sets: [hala_gfx::HalaDescriptorSet; 3],
   pub(crate) image_2_screen_program: HalaGraphicsProgram,
 
-  pub(crate) image3d_sampler: hala_gfx::HalaSampler,
-
-  pub(crate) cross_xyz_descriptor_set: hala_gfx::HalaDescriptorSet,
-  pub(crate) cross_xyz_program: HalaGraphicsProgram,
-
-  pub(crate) sdf_visualization_uniform_buffer: hala_gfx::HalaBuffer,
-  pub(crate) sdf_visualization_descriptor_set: hala_gfx::HalaDescriptorSet,
-  pub(crate) sdf_visualization_program: HalaGraphicsProgram,
-
   pub(crate) write_uvw_and_coverage_programs: [Option<HalaGraphicsProgram>; 3],
   pub(crate) write_triangle_ids_to_voxels_programs: [Option<HalaGraphicsProgram>; 3],
 
@@ -317,96 +308,6 @@ impl SDFBakerResources {
       "image_2_screen",
     )?;
 
-    let image3d_sampler = hala_gfx::HalaSampler::new(
-      logical_device.clone(),
-      (hala_gfx::HalaFilter::LINEAR, hala_gfx::HalaFilter::LINEAR),
-      hala_gfx::HalaSamplerMipmapMode::LINEAR,
-      (hala_gfx::HalaSamplerAddressMode::CLAMP_TO_EDGE, hala_gfx::HalaSamplerAddressMode::CLAMP_TO_EDGE, hala_gfx::HalaSamplerAddressMode::CLAMP_TO_EDGE),
-      0.0,
-      false,
-      1.0,
-      (0.0, 0.0),
-      "cross_xyz.sampler",
-    )?;
-
-    let cross_xyz_desc = baker_config.graphics_programs.get("cross_xyz").ok_or(HalaRendererError::new("Failed to get graphics program \"cross_xyz\".", None))?;
-    let cross_xyz_bindings = cross_xyz_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
-      hala_gfx::HalaDescriptorSetLayoutBinding {
-        binding_index: binding_index as u32,
-        descriptor_type: *binding_type,
-        descriptor_count: 1,
-        stage_flags: hala_gfx::HalaShaderStageFlags::VERTEX | hala_gfx::HalaShaderStageFlags::FRAGMENT,
-        binding_flags: hala_gfx::HalaDescriptorBindingFlags::PARTIALLY_BOUND
-      }
-    }).collect::<Vec<_>>();
-    let cross_xyz_descriptor_set = hala_gfx::HalaDescriptorSet::new_static(
-      logical_device.clone(),
-      descriptor_pool.clone(),
-      hala_gfx::HalaDescriptorSetLayout::new(
-        logical_device.clone(),
-        cross_xyz_bindings.as_slice(),
-        "cross_xyz.descriptor_set_layout",
-      )?,
-      0,
-      "cross_xyz.descriptor_set",
-    )?;
-    let cross_xyz_program = HalaGraphicsProgram::new(
-      logical_device.clone(),
-      swapchain,
-      &[&cross_xyz_descriptor_set.layout],
-      hala_gfx::HalaPipelineCreateFlags::default(),
-      &[] as &[hala_gfx::HalaVertexInputAttributeDescription],
-      &[] as &[hala_gfx::HalaVertexInputBindingDescription],
-      &[],
-      cross_xyz_desc,
-      Some(pipeline_cache),
-      "cross_xyz",
-    )?;
-
-    let sdf_visualization_uniform_buffer = hala_gfx::HalaBuffer::new(
-      logical_device.clone(),
-      std::mem::size_of::<SDFBakerSDFVisualizationUniform>() as u64,
-      hala_gfx::HalaBufferUsageFlags::UNIFORM_BUFFER,
-      hala_gfx::HalaMemoryLocation::CpuToGpu,
-      "sdf_visualization.uniform_buffer",
-    )?;
-    let sdf_visualization_desc = baker_config.graphics_programs.get("sdf_visualization")
-      .ok_or(HalaRendererError::new("Failed to get graphics program \"sdf_visualization\".", None))?;
-    let sdf_visualization_bindings = sdf_visualization_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
-      hala_gfx::HalaDescriptorSetLayoutBinding {
-        binding_index: binding_index as u32,
-        descriptor_type: *binding_type,
-        descriptor_count: 1,
-        stage_flags: hala_gfx::HalaShaderStageFlags::VERTEX | hala_gfx::HalaShaderStageFlags::FRAGMENT,
-        binding_flags: hala_gfx::HalaDescriptorBindingFlags::PARTIALLY_BOUND
-      }
-    }).collect::<Vec<_>>();
-    let sdf_visualization_descriptor_set = hala_gfx::HalaDescriptorSet::new_static(
-      logical_device.clone(),
-      descriptor_pool.clone(),
-      hala_gfx::HalaDescriptorSetLayout::new(
-        logical_device.clone(),
-        sdf_visualization_bindings.as_slice(),
-        "sdf_visualization.descriptor_set_layout",
-      )?,
-      0,
-      "sdf_visualization.descriptor_set",
-    )?;
-    let sdf_visualization_program = HalaGraphicsProgram::new(
-      logical_device.clone(),
-      swapchain,
-      &[
-        &sdf_visualization_descriptor_set.layout
-      ],
-      hala_gfx::HalaPipelineCreateFlags::default(),
-      &[] as &[hala_gfx::HalaVertexInputAttributeDescription],
-      &[] as &[hala_gfx::HalaVertexInputBindingDescription],
-      &[],
-      sdf_visualization_desc,
-      Some(pipeline_cache),
-      "sdf_visualization",
-    )?;
-
     let write_uvw_and_coverage_desc = baker_config.graphics_programs.get("write_uvw_and_coverage")
       .ok_or(HalaRendererError::new("Failed to get graphics program \"write_uvw_and_coverage\".", None))?;
     let write_uvw_and_coverage_bindings = write_uvw_and_coverage_desc.bindings.iter().enumerate().map(|(binding_index, binding_type)| {
@@ -498,15 +399,6 @@ impl SDFBakerResources {
       image_2_screen_sampler,
       image_2_screen_descriptor_sets,
       image_2_screen_program,
-
-      image3d_sampler,
-
-      cross_xyz_descriptor_set,
-      cross_xyz_program,
-
-      sdf_visualization_uniform_buffer,
-      sdf_visualization_descriptor_set,
-      sdf_visualization_program,
 
       write_uvw_and_coverage_programs: [PROGRAM_REPEAT_NONE; 3],
       write_triangle_ids_to_voxels_programs: [PROGRAM_REPEAT_NONE; 3],
