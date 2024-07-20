@@ -27,9 +27,9 @@ void main(uint3 id: SV_DispatchThreadID) {
   // W = (2 - 2.5 + 0.5) / 5 = 0.0).
   // Transform the UVW to the range [0, 1].
   Triangle tri_uvw;
-  tri_uvw.a = (get_vertex_pos(id.x, 0) - center + extents) / _max_extent;
-  tri_uvw.b = (get_vertex_pos(id.x, 1) - center + extents) / _max_extent;
-  tri_uvw.c = (get_vertex_pos(id.x, 2) - center + extents) / _max_extent;
+  tri_uvw.a = (get_vertex_pos(id.x, 0) - center + extents) / _max_size;
+  tri_uvw.b = (get_vertex_pos(id.x, 1) - center + extents) / _max_size;
+  tri_uvw.c = (get_vertex_pos(id.x, 2) - center + extents) / _max_size;
 
   _triangles_uvw_rw[id.x] = tri_uvw;
 }

@@ -297,7 +297,7 @@ impl SDFBaker {
     let num_of_triangles = primitive.index_count / 3;
     let dimensions = self.estimate_grid_size();
     let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
-    let max_extent = self.settings.actual_size.iter().fold(0.0, |a: f32, b| a.max(*b));
+    let max_size = self.settings.actual_size.iter().fold(0.0, |a: f32, b| a.max(*b));
     // Triangle ID buffer max size.
     // Assume only half of the voxels have triangles.
     let num_of_voxels_has_triangles = dimensions[0] as f64 * dimensions[1] as f64 * dimensions[2] as f64 / 2.0f64;
@@ -365,7 +365,7 @@ impl SDFBaker {
       max_dimension: self.settings.max_resolution as u32,
       upper_bound_count,
       num_of_triangles,
-      max_extent,
+      max_size,
       padding0: 0.0,
       min_bounds_extended: bounds.get_min(),
       padding1: 0.0,

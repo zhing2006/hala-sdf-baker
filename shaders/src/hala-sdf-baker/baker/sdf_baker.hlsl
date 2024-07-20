@@ -15,7 +15,7 @@ cbuffer GlobalUniformBuffer {
   uint _max_dimension;
   uint _upper_bound_count;
   uint _num_of_triangles;
-  float _max_extent;
+  float _max_size;
   float _padding0;
   float3 _min_bounds_extended;
   float _padding1;
