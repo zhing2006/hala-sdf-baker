@@ -8,7 +8,7 @@ struct PushConstants {
 PushConstants g_push_constants;
 
 [[vk::binding(0, 1)]]
-RWTexture3D<float4> _voxels_texture;
+Texture3D<float4> _voxels_texture;
 
 [[vk::binding(1, 1)]]
 RWTexture3D<float4> _voxels_texture_rw;

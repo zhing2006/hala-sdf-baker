@@ -608,7 +608,7 @@ impl SDFBaker {
               src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
               src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
+              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               size: counters_buffer.size,
               buffer: counters_buffer.raw,
               ..Default::default()
@@ -738,7 +738,7 @@ impl SDFBaker {
               src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
               src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
+              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               size: accum_counters_buffer.size,
               buffer: accum_counters_buffer.raw,
               ..Default::default()

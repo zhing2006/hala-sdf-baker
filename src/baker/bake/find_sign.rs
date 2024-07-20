@@ -160,15 +160,6 @@ impl SDFBaker {
             image: sign_map.raw,
             ..Default::default()
           },
-          hala_gfx::HalaImageBarrierInfo {
-            old_layout: hala_gfx::HalaImageLayout::GENERAL,
-            new_layout: hala_gfx::HalaImageLayout::GENERAL,
-            src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-            dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-            aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
-            image: sign_map_bis.raw,
-            ..Default::default()
-          },
         ],
       );
     }
@@ -235,7 +226,7 @@ impl SDFBaker {
               src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
               src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
+              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
               image: get_read_sign_map(i).raw,
               ..Default::default()

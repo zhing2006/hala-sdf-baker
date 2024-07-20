@@ -15,7 +15,7 @@ PushConstants g_push_constants;
 Texture3D<float4> _ray_map;
 
 [[vk::binding(1, 1)]]
-Texture3D<float> _sign_map_bis;
+Texture3D<float> _sign_map;
 
 [[vk::binding(2, 1)]]
 RWTexture3D<float> _sign_map_rw;
@@ -84,7 +84,7 @@ void main(uint3 id: SV_DispatchThreadID) {
     accum_sign += (_ray_map[int3(id.x, id.y, neighbors_index.z)].x - _ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].x);
     accum_sign += (_ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].y - _ray_map[neighbors_index].y);
 
-    _sign_map_rw[id.xyz] += g_push_constants.normalize_factor * accum_sign + 6 * _sign_map_bis[neighbors_index];
+    _sign_map_rw[id.xyz] += g_push_constants.normalize_factor * accum_sign + 6 * _sign_map[neighbors_index];
   }
 
   if (g_push_constants.need_normalize) {
