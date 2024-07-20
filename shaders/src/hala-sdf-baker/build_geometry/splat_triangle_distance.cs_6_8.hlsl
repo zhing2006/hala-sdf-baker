@@ -104,7 +104,6 @@ void main(uint3 id: SV_DispatchThreadID) {
     for (int y = voxel_min.y; y <= voxel_max.y; ++y) {
       for (int x = voxel_min.x; x <= voxel_max.x; ++x) {
         int3 voxel_coord = int3(x, y, z);
-        uint id = id3(voxel_coord);
         float3 voxel_position = get_position(voxel_coord);
         float distance = distance_point_2_triangle(voxel_position, vertex0, vertex1, vertex2);
         uint distance_as_uint = float_flip(distance);

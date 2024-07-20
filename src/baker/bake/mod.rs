@@ -777,7 +777,8 @@ impl SDFBaker {
     )?;
 
     // Jump flooding.
-    self.jump_flooding_compute(
+    #[allow(unused_variables)]
+    let distance_buffer = self.jump_flooding_compute(
       command_buffers,
       distance_texture,
       jump_buffer,
@@ -806,7 +807,7 @@ impl SDFBaker {
       // for i in 0..num_of_voxels {
       //   log::debug!("Data[{}] = {}", i, data[i as usize]);
       // }
-      // let data = self.debug_get_buffer_data::<f32>(jump_buffer)?;
+      // let data = self.debug_get_buffer_data::<f32>(distance_buffer)?;
       // for i in 0..num_of_voxels {
       //   log::debug!("Data[{}] = {}", i, data[i as usize]);
       // }

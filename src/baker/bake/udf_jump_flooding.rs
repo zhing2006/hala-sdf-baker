@@ -97,18 +97,18 @@ impl SDFBaker {
   }
 
   #[allow(clippy::too_many_arguments)]
-  pub(super) fn jump_flooding_compute(
+  pub(super) fn jump_flooding_compute<'a: 'b, 'b>(
     &self,
     command_buffers: &hala_gfx::HalaCommandBufferSet,
     distance_texture: &hala_gfx::HalaImage,
-    jump_buffer: &hala_gfx::HalaBuffer,
-    jump_buffer_bis: &hala_gfx::HalaBuffer,
+    jump_buffer: &'a hala_gfx::HalaBuffer,
+    jump_buffer_bis: &'a hala_gfx::HalaBuffer,
     jump_flooding_initialize_descriptor_set: &hala_gfx::HalaDescriptorSet,
     jump_flooding_odd_descriptor_set: &hala_gfx::HalaDescriptorSet,
     jump_flooding_even_descriptor_set: &hala_gfx::HalaDescriptorSet,
     jump_flooding_finalize_descriptor_set: &hala_gfx::HalaDescriptorSet,
     dimensions: &[u32; 3]
-  ) -> Result<(), HalaRendererError> {
+  ) -> Result<&'b hala_gfx::HalaBuffer, HalaRendererError> {
     // distance_texture be going to be read by compute shaders.
     // jump_buffer be going to be written by compute shaders.
     {
@@ -305,7 +305,7 @@ impl SDFBaker {
       );
     }
 
-    Ok(())
+    Ok(get_read_jump_buffer(num_of_passes))
   }
 
 }
