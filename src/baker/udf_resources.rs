@@ -104,7 +104,7 @@ impl UDFBakerResources {
     for (name, desc) in baker_config.compute_programs.iter() {
       compute_descs.insert(name.clone(), desc);
     }
-    let dup_descriptor_set_names: [&str; 0] = [];
+    let dup_descriptor_set_names = ["jump_flooding"];
     for &descriptor_set_name in dup_descriptor_set_names.iter() {
       let desc = &baker_config.compute_programs[descriptor_set_name];
       let name = format!("{}_2", descriptor_set_name);

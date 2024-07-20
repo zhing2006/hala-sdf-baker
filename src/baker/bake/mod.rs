@@ -738,7 +738,8 @@ impl SDFBaker {
     )?;
     let (
       jump_flooding_initialize_descriptor_set,
-      jump_flooding_descriptor_set,
+      jump_flooding_odd_descriptor_set,
+      jump_flooding_even_descriptor_set,
       jump_flooding_finalize_descriptor_set,
     ) = self.jump_flooding_update(
       distance_texture,
@@ -782,7 +783,8 @@ impl SDFBaker {
       jump_buffer,
       jump_buffer_bis,
       jump_flooding_initialize_descriptor_set,
-      jump_flooding_descriptor_set,
+      jump_flooding_odd_descriptor_set,
+      jump_flooding_even_descriptor_set,
       jump_flooding_finalize_descriptor_set,
       &dimensions,
     )?;
@@ -796,6 +798,18 @@ impl SDFBaker {
 
       logical_device.graphics_submit(command_buffers, 0, 0)?;
       logical_device.graphics_wait(0)?;
+    }
+
+    // Debug.
+    {
+      // let data = self.debug_get_buffer_data::<u32>(jump_buffer)?;
+      // for i in 0..num_of_voxels {
+      //   log::debug!("Data[{}] = {}", i, data[i as usize]);
+      // }
+      // let data = self.debug_get_buffer_data::<[f32; 4]>(triangle_uvw_buffer)?;
+      // for i in 0..num_of_triangles {
+      //   log::debug!("Triangle[{}] = {:?}, {:?}, {:?}", i, data[i as usize * 3], data[i as usize * 3 + 1], data[i as usize * 3 + 2]);
+      // }
     }
 
     Ok(())

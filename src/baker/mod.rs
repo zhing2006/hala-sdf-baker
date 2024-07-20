@@ -852,7 +852,7 @@ impl HalaRendererTrait for SDFBaker {
     self.pre_update(width, height)?;
 
     // TEMP: for test ONLY! Don't forget to remove it.
-    // self.bake()?;
+    // self.bake_udf()?;
 
     let scene = self.scene_in_gpu.as_ref().ok_or(HalaRendererError::new("The scene in GPU is none!", None))?;
     let context = self.resources.context.borrow();
