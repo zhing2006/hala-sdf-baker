@@ -5,6 +5,9 @@ inline float sample_surface(float3 position) {
 }
 
 void ray_marching(float3 ray_origin, float3 ray_direction, float t_min, float t_max, float min_surface_distance, out float4 color, out float depth) {
+  color = float4(0, 0, 0, 0);
+  depth = 0;
+
   const float3 inv_scale = float3(1.0 / g_push_constants.extents[0], 1.0 / g_push_constants.extents[1], 1.0 / g_push_constants.extents[2]);
   float t = t_min;
   for (int i = 0; i < 2048; i++) {
@@ -13,7 +16,7 @@ void ray_marching(float3 ray_origin, float3 ray_direction, float t_min, float t_
     uvw = uvw * 0.5 + 0.5;
     const float sampled_distance = sample_surface(uvw);
 
-    if (sampled_distance < min_surface_distance || t > t_max) {
+    if (sampled_distance < min_surface_distance) {
       const float3 delta_shift = _inv_resolution * inv_scale; // One voxel in uvw space.
       const float3 delta = float3(sample_surface(uvw + float3(delta_shift.x, 0, 0)),
         sample_surface(uvw + float3(0, delta_shift.y, 0)),
@@ -28,11 +31,10 @@ void ray_marching(float3 ray_origin, float3 ray_direction, float t_min, float t_
     }
 
     t += sampled_distance;
-  }
 
-  if (t > t_max) {
-    color = float4(0, 0, 0, 0);
-    depth = 0;
+    if (t > t_max) {
+      break;
+    }
   }
 }
 
