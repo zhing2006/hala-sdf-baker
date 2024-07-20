@@ -18,7 +18,7 @@ void jump_sample(int3 center_coord, int3 offset, inout float best_distance, inou
   uint voxel_sample_index = _jump_buffer[id3(sample_coord)];
   int3 voxel_sample_coord = unpack_id3(voxel_sample_index);
   float dist = length(center_coord - voxel_sample_coord);
-  if (voxel_sample_index != 0 && dist < best_distance) {
+  if (voxel_sample_index != 0xFFFFFFFF && dist < best_distance) {
     best_distance = dist;
     best_index = voxel_sample_index;
   }

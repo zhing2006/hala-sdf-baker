@@ -21,5 +21,5 @@ void main(uint3 id: SV_DispatchThreadID) {
   // Even though more voxels are initialized, we want to treat as seeds only the ones
   // within one voxel of the surface. Otherwise the distance estimate is not very smooth
   // as it sees the chunky bounding boxes of bigger triangles.
-  _jump_buffer_rw[voxel_index] = abs(distance) > _voxel_size * SQRT_3 ? 0 : voxel_index;
+  _jump_buffer_rw[voxel_index] = abs(distance) > _voxel_size * SQRT_3 ? 0xFFFFFFFF : voxel_index;
 }

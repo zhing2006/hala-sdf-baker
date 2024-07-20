@@ -667,7 +667,7 @@ impl SDFBaker {
 
     // Setup.
     let num_of_triangles = primitive.index_count / 3;
-    let max_distance = (self.settings.actual_size[0] * self.settings.actual_size[1] * self.settings.actual_size[2]).powf(1.0 / 3.0);
+    let max_distance = (self.settings.actual_size[0] * self.settings.actual_size[0] + self.settings.actual_size[1] * self.settings.actual_size[1] + self.settings.actual_size[2] * self.settings.actual_size[2]).sqrt();
     let dimensions = self.estimate_grid_size();
     let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
     let bounds = self.settings.get_bounds();
@@ -806,9 +806,9 @@ impl SDFBaker {
       // for i in 0..num_of_voxels {
       //   log::debug!("Data[{}] = {}", i, data[i as usize]);
       // }
-      // let data = self.debug_get_buffer_data::<[f32; 4]>(triangle_uvw_buffer)?;
-      // for i in 0..num_of_triangles {
-      //   log::debug!("Triangle[{}] = {:?}, {:?}, {:?}", i, data[i as usize * 3], data[i as usize * 3 + 1], data[i as usize * 3 + 2]);
+      // let data = self.debug_get_buffer_data::<f32>(jump_buffer)?;
+      // for i in 0..num_of_voxels {
+      //   log::debug!("Data[{}] = {}", i, data[i as usize]);
       // }
     }
 

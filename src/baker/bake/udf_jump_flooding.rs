@@ -82,6 +82,11 @@ impl SDFBaker {
       1,
       &[distance_texture],
     );
+    jump_flooding_finalize_descriptor_set.update_storage_buffers(
+      0,
+      2,
+      &[get_read_jump_buffer(num_of_passes)],
+    );
 
     Ok((
       jump_flooding_initialize_descriptor_set,
@@ -254,6 +259,13 @@ impl SDFBaker {
             buffer: get_write_jump_buffer(num_of_passes).raw,
             ..Default::default()
           },
+          hala_gfx::HalaBufferBarrierInfo{
+            src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+            dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+            size: get_read_jump_buffer(num_of_passes).size,
+            buffer: get_read_jump_buffer(num_of_passes).raw,
+            ..Default::default()
+          }
         ],
       );
 

@@ -35,5 +35,6 @@ compute_programs:
     bindings:
       - storage_buffer
       - storage_image
+      - storage_buffer
 
 graphics_programs:
