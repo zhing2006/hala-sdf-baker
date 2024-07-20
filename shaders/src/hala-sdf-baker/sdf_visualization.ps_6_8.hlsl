@@ -17,7 +17,7 @@ void ray_marching(float3 ray_origin, float3 ray_direction, float t_min, float t_
     const float sampled_distance = sample_surface(uvw);
 
     if (sampled_distance < min_surface_distance) {
-      const float3 delta_shift = _inv_resolution * inv_scale; // One voxel in uvw space.
+      const float3 delta_shift = _inv_resolution * 2 * inv_scale; // One voxel in uvw space. 2 mean inv_scale is from extents, it is half of the bounding box size.
       const float3 delta = float3(sample_surface(uvw + float3(delta_shift.x, 0, 0)),
         sample_surface(uvw + float3(0, delta_shift.y, 0)),
         sample_surface(uvw + float3(0, 0, delta_shift.z))) - sampled_distance;
