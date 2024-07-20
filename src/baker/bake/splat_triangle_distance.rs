@@ -1,6 +1,6 @@
 use hala_renderer::error::HalaRendererError;
-use crate::baker::SDFBaker;
 
+use crate::baker::SDFBaker;
 use crate::baker::udf_resources::UDFBakerCSMeshUniform;
 
 impl SDFBaker {

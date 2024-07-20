@@ -15,6 +15,15 @@ inline uint id3(uint i, uint j, uint k) {
   return i + _dimensions.x * j + _dimensions.x * _dimensions.y * k;
 }
 
+inline int3 unpack_id3(uint id) {
+  int3 coord;
+  coord.z = id / (_dimensions.x * _dimensions.y);
+  int remainder = id % (_dimensions.x * _dimensions.y);
+  coord.y = remainder / _dimensions.x;
+  coord.x = remainder % _dimensions.x;
+  return coord;
+}
+
 inline uint id3(int3 coord) {
   return id3(coord.x, coord.y, coord.z);
 }

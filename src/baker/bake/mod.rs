@@ -24,6 +24,7 @@ pub mod surface_closing;
 pub mod distance_transform_winding;
 pub mod udf_initialize;
 pub mod splat_triangle_distance;
+pub mod udf_jump_flooding;
 
 impl SDFBaker {
 
@@ -675,10 +676,8 @@ impl SDFBaker {
     self.create_udf_buffers_images(num_of_voxels, &dimensions)?;
     let distance_texture = self.udf_baker_resources.distance_texture.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the distance_texture.", None))?;
-    #[allow(unused_variables)]
     let jump_buffer = self.udf_baker_resources.jump_buffer.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the jump_buffer.", None))?;
-    #[allow(unused_variables)]
     let jump_buffer_bis = self.udf_baker_resources.jump_buffer_bis.as_ref()
       .ok_or(HalaRendererError::new("Failed to get the jump_buffer_bis.", None))?;
     let (index_buffer, vertex_buffer) = self.get_selected_mesh_buffers()?;
@@ -737,6 +736,15 @@ impl SDFBaker {
       vertex_buffer,
       distance_texture,
     )?;
+    let (
+      jump_flooding_initialize_descriptor_set,
+      jump_flooding_descriptor_set,
+      jump_flooding_finalize_descriptor_set,
+    ) = self.jump_flooding_update(
+      distance_texture,
+      jump_buffer,
+      jump_buffer_bis,
+    )?;
 
     // Send commands to the compute queue.
     let command_buffers = &self.bake_command_buffers;
@@ -764,6 +772,18 @@ impl SDFBaker {
       command_buffers,
       distance_texture,
       finalize_descriptor_set,
+      &dimensions,
+    )?;
+
+    // Jump flooding.
+    self.jump_flooding_compute(
+      command_buffers,
+      distance_texture,
+      jump_buffer,
+      jump_buffer_bis,
+      jump_flooding_initialize_descriptor_set,
+      jump_flooding_descriptor_set,
+      jump_flooding_finalize_descriptor_set,
       &dimensions,
     )?;
 
