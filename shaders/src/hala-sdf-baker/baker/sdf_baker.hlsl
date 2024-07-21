@@ -1,13 +1,11 @@
+#include "baker.hlsl"
+
 #define THREAD_GROUP_SIZE 512
 #define COMMON_EPS 1e-6
 #define BARY_EPS 1e-5
 #define CONSERVATIVE_RASTER_EPS 1e-6
 #define INTERSECT_EPS 0
 #define PI 3.14159265359
-
-struct Triangle {
-  float3 a, b, c;
-};
 
 [[vk::binding(0, 0)]]
 cbuffer GlobalUniformBuffer {

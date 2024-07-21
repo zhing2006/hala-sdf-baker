@@ -18,7 +18,7 @@ impl SDFBaker {
     ),
     HalaRendererError,
   > {
-    let num_of_passes = self.settings.max_resolution.ilog2() - 1;
+    let num_of_passes = self.settings.max_resolution.ilog2();
     let get_write_jump_buffer = |i| {
       if i % 2 == 0 { // even
         jump_buffer
@@ -51,24 +51,34 @@ impl SDFBaker {
     jump_flooding_odd_descriptor_set.update_storage_buffers(
       0,
       0,
-      &[get_read_jump_buffer(1)],
+      &[jump_buffer],
+    );
+    jump_flooding_odd_descriptor_set.update_sampled_images(
+      0,
+      1,
+      &[distance_texture],
     );
     jump_flooding_odd_descriptor_set.update_storage_buffers(
       0,
-      1,
-      &[get_write_jump_buffer(1)],
+      2,
+      &[jump_buffer_bis],
     );
     let jump_flooding_even_descriptor_set = self.udf_baker_resources.descriptor_sets.get("jump_flooding_2")
       .ok_or(HalaRendererError::new("Failed to get the jump_flooding_2 descriptor set.", None))?;
     jump_flooding_even_descriptor_set.update_storage_buffers(
       0,
       0,
-      &[get_read_jump_buffer(0)],
+      &[jump_buffer_bis],
+    );
+    jump_flooding_even_descriptor_set.update_sampled_images(
+      0,
+      1,
+      &[distance_texture],
     );
     jump_flooding_even_descriptor_set.update_storage_buffers(
       0,
-      1,
-      &[get_write_jump_buffer(0)],
+      2,
+      &[jump_buffer],
     );
     let jump_flooding_finalize_descriptor_set = self.udf_baker_resources.descriptor_sets.get("jump_flooding_final")
       .ok_or(HalaRendererError::new("Failed to get the jump flooding finalize descriptor set.", None))?;
@@ -166,19 +176,19 @@ impl SDFBaker {
       );
     }
 
-    let num_of_passes = self.settings.max_resolution.ilog2() - 1;
-    let get_write_jump_buffer = |i| {
-      if i % 2 == 0 {
-        jump_buffer
-      } else {
-        jump_buffer_bis
-      }
-    };
+    let num_of_passes = self.settings.max_resolution.ilog2();
     let get_read_jump_buffer = |i| {
       if i % 2 == 0 {
         jump_buffer_bis
       } else {
         jump_buffer
+      }
+    };
+    let get_write_jump_buffer = |i| {
+      if i % 2 == 0 {
+        jump_buffer
+      } else {
+        jump_buffer_bis
       }
     };
     let get_jump_flooding_descriptor_set = |i| {
@@ -193,6 +203,8 @@ impl SDFBaker {
     {
       for i in 1..=num_of_passes {
         let offset = ((1 << (num_of_passes - i)) as f32 + 0.5).floor() as i32;
+        let read_buffer = get_read_jump_buffer(i);
+        let write_buffer = get_write_jump_buffer(i);
         command_buffers.set_buffer_barriers(
           0,
           &[
@@ -201,15 +213,15 @@ impl SDFBaker {
               src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
               dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
               dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
-              size: get_read_jump_buffer(i).size,
-              buffer: get_read_jump_buffer(i).raw,
+              size: read_buffer.size,
+              buffer: read_buffer.raw,
               ..Default::default()
             },
             hala_gfx::HalaBufferBarrierInfo {
               src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
               dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-              size: get_write_jump_buffer(i).size,
-              buffer: get_write_jump_buffer(i).raw,
+              size: write_buffer.size,
+              buffer: write_buffer.raw,
               ..Default::default()
             },
           ],
@@ -247,6 +259,8 @@ impl SDFBaker {
 
     // Finalize.
     {
+      let read_buffer = get_write_jump_buffer(num_of_passes);
+      let write_buffer = get_read_jump_buffer(num_of_passes);
       command_buffers.set_buffer_barriers(
         0,
         &[
@@ -255,15 +269,15 @@ impl SDFBaker {
             src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
             dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
             dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
-            size: get_write_jump_buffer(num_of_passes).size,
-            buffer: get_write_jump_buffer(num_of_passes).raw,
+            size: read_buffer.size,
+            buffer: read_buffer.raw,
             ..Default::default()
           },
           hala_gfx::HalaBufferBarrierInfo{
             src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
             dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-            size: get_read_jump_buffer(num_of_passes).size,
-            buffer: get_read_jump_buffer(num_of_passes).raw,
+            size: write_buffer.size,
+            buffer: write_buffer.raw,
             ..Default::default()
           }
         ],

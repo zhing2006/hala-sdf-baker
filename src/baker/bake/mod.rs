@@ -688,10 +688,13 @@ impl SDFBaker {
 
     // Setup.
     let num_of_triangles = primitive.index_count / 3;
-    let max_distance = (self.settings.actual_size[0] * self.settings.actual_size[0] + self.settings.actual_size[1] * self.settings.actual_size[1] + self.settings.actual_size[2] * self.settings.actual_size[2]).sqrt();
+    let max_size = self.settings.actual_size.iter().fold(0.0, |a: f32, b| a.max(*b));
+    let normalized_size = self.settings.actual_size.iter().map(|a| a / max_size).collect::<Vec<f32>>();
+    let max_distance = (normalized_size[0] * normalized_size[0] + normalized_size[1] * normalized_size[1] + normalized_size[2] * normalized_size[2]).sqrt();
     let dimensions = self.estimate_grid_size();
     let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
     let bounds = self.settings.get_bounds();
+    let max_dimension = dimensions.iter().fold(0, |a, b| a.max(*b));
 
     // Create buffers and images.
     self.create_udf_buffers_images(num_of_voxels, &dimensions)?;
@@ -712,8 +715,9 @@ impl SDFBaker {
       initial_distance: max_distance * 1.01,
       voxel_size: self.settings.actual_size[0] / dimensions[0] as f32,
       min_bounds_extended: bounds.get_min(),
-      padding0: 0.0,
+      max_size,
       max_bounds_extended: bounds.get_max(),
+      max_dimension,
     };
     log::debug!("Global uniform: {:?}", global_uniform);
     self.udf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
@@ -838,7 +842,7 @@ impl SDFBaker {
   }
 
   pub fn save_udf<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), HalaRendererError> {
-    let num_of_passes = self.settings.max_resolution.ilog2() - 1;
+    let num_of_passes = self.settings.max_resolution.ilog2();
     let get_read_jump_buffer = |i| {
       if i % 2 == 0 {
         self.udf_baker_resources.jump_buffer_bis.as_ref()
