@@ -22,7 +22,7 @@ impl SDFBaker {
         hala_gfx::HalaBuffer::new(
           Rc::clone(&self.resources.context.borrow().logical_device),
           voxels_buffer_size,
-          hala_gfx::HalaBufferUsageFlags::STORAGE_BUFFER,
+          hala_gfx::HalaBufferUsageFlags::STORAGE_BUFFER | hala_gfx::HalaBufferUsageFlags::TRANSFER_SRC,
           hala_gfx::HalaMemoryLocation::GpuOnly,
           "voxels.buffer",
         )?

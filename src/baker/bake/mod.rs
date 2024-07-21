@@ -647,6 +647,27 @@ impl SDFBaker {
     Ok(())
   }
 
+  pub fn save_sdf<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), HalaRendererError> {
+    let distance_buffer = self.sdf_baker_resources.voxels_buffer.as_ref()
+      .ok_or(HalaRendererError::new("Failed to get the distance_buffer.", None))?;
+    let dimensions = self.estimate_grid_size();
+    let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
+    let data = self.debug_get_buffer_data::<f32>(distance_buffer)?;
+    let mut file = std::fs::File::create(path)
+      .map_err(|e| HalaRendererError::new(&format!("Failed to create the UDF file. {}", e), Some(Box::new(e))) )?;
+    let mut writer = std::io::BufWriter::new(&mut file);
+    // Write dimensions.
+    std::io::Write::write_all(&mut writer, format!("{} {} {}\n", dimensions[0], dimensions[1], dimensions[2]).as_bytes())
+      .map_err(|e| HalaRendererError::new(&format!("Failed to write the dimensions. {}", e), Some(Box::new(e))) )?;
+    // Write UDF data.
+    for i in 0..num_of_voxels {
+      std::io::Write::write_all(&mut writer, format!("{}\n", data[i as usize]).as_bytes())
+        .map_err(|e| HalaRendererError::new(&format!("Failed to write the UDF data. {}", e), Some(Box::new(e))) )?;
+    }
+
+    Ok(())
+  }
+
   /// Create all buffers and images for the baker.
   /// param num_of_voxels: The number of triangles.
   /// param dimensions: The dimensions of the voxels.
@@ -811,6 +832,36 @@ impl SDFBaker {
       // for i in 0..num_of_voxels {
       //   log::debug!("Data[{}] = {}", i, data[i as usize]);
       // }
+    }
+
+    Ok(())
+  }
+
+  pub fn save_udf<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), HalaRendererError> {
+    let num_of_passes = self.settings.max_resolution.ilog2() - 1;
+    let get_read_jump_buffer = |i| {
+      if i % 2 == 0 {
+        self.udf_baker_resources.jump_buffer_bis.as_ref()
+      } else {
+        self.udf_baker_resources.jump_buffer.as_ref()
+      }
+    };
+
+    let distance_buffer = get_read_jump_buffer(num_of_passes)
+      .ok_or(HalaRendererError::new("Failed to get the distance_buffer.", None))?;
+    let dimensions = self.estimate_grid_size();
+    let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];
+    let data = self.debug_get_buffer_data::<f32>(distance_buffer)?;
+    let mut file = std::fs::File::create(path)
+      .map_err(|e| HalaRendererError::new(&format!("Failed to create the UDF file. {}", e), Some(Box::new(e))) )?;
+    let mut writer = std::io::BufWriter::new(&mut file);
+    // Write dimensions.
+    std::io::Write::write_all(&mut writer, format!("{} {} {}\n", dimensions[0], dimensions[1], dimensions[2]).as_bytes())
+      .map_err(|e| HalaRendererError::new(&format!("Failed to write the dimensions. {}", e), Some(Box::new(e))) )?;
+    // Write UDF data.
+    for i in 0..num_of_voxels {
+      std::io::Write::write_all(&mut writer, format!("{}\n", data[i as usize]).as_bytes())
+        .map_err(|e| HalaRendererError::new(&format!("Failed to write the UDF data. {}", e), Some(Box::new(e))) )?;
     }
 
     Ok(())

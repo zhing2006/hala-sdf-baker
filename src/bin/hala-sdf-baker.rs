@@ -23,6 +23,7 @@ use hala_sdf_baker::{
 /// The SDF baker application.
 struct SDFBakerApplication {
   log_file: String,
+  output_file: String,
   config: config::AppConfig,
   baker: Option<SDFBaker>,
   imgui: Option<HalaImGui>,
@@ -46,6 +47,7 @@ impl SDFBakerApplication {
       None => "./logs/sdf_baker.log"
     };
     let config_file = matches.get_one::<String>("config").with_context(|| "Failed to get the config file path.")?;
+    let output_file = matches.get_one::<String>("output").with_context(|| "Failed to get the output file path.")?;
 
     // Load the configure.
     let config = config::load_app_config(config_file)?;
@@ -58,6 +60,7 @@ impl SDFBakerApplication {
 
     Ok(Self {
       log_file: log_file.to_string(),
+      output_file: output_file.to_string(),
       config,
       baker: None,
       imgui: None,
@@ -242,7 +245,18 @@ impl HalaApplication for SDFBakerApplication {
               }
               ui.same_line();
               if ui.button_with_size("Save", [100.0, 30.0]) {
-                log::info!("Save button clicked.");
+                match if baker.settings.is_sdf {
+                  baker.save_sdf(std::path::Path::new(&self.output_file))
+                } else {
+                  baker.save_udf(std::path::Path::new(&self.output_file))
+                } {
+                  Ok(_) => {
+                    log::info!("Save success.");
+                  },
+                  Err(e) => {
+                    log::error!("Save failed: {:?}", e);
+                  }
+                }
               }
             }
           );
@@ -315,6 +329,7 @@ fn cli() -> Command {
     .arg_required_else_help(true)
     .arg(arg!(-l --log <LOG_FILE> "The file path of the log file. Default is ./logs/sdf_baker.log."))
     .arg(arg!(-c --config [CONFIG_FILE] "The file path of the config file."))
+    .arg(arg!(-o --output [OUTPUT_FILE] "The file path of the output file."))
 }
 
 /// The normal main function.
