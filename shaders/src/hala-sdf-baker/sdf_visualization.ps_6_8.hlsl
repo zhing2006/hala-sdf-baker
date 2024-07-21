@@ -8,16 +8,18 @@ void ray_marching(float3 ray_origin, float3 ray_direction, float t_min, float t_
   color = float4(0, 0, 0, 0);
   depth = 0;
 
-  const float3 inv_scale = float3(1.0 / g_push_constants.extents[0], 1.0 / g_push_constants.extents[1], 1.0 / g_push_constants.extents[2]);
+  const float max_size = 2.0 * max(max(g_push_constants.extents[0], g_push_constants.extents[1]), g_push_constants.extents[2]);
+  const float3 inv_extents = float3(1.0 / g_push_constants.extents[0], 1.0 / g_push_constants.extents[1], 1.0 / g_push_constants.extents[2]);
+  const float3 voxel_size = 1.0 / float3(_dimensions);
   float t = t_min;
   for (int i = 0; i < 2048; i++) {
     const float3 position = ray_origin + ray_direction * t;
-    float3 uvw = position * inv_scale;
-    uvw = uvw * 0.5 + 0.5;
-    const float sampled_distance = sample_surface(uvw);
+    float3 uvw = position * inv_extents;
+    uvw = uvw * 0.5 + 0.5; // Normalize to [0, 1] range.
+    const float sampled_distance = sample_surface(uvw); // Distance is in UVW space.
 
     if (sampled_distance < min_surface_distance) {
-      const float3 delta_shift = _inv_resolution * 2 * inv_scale; // One voxel in uvw space. 2 mean inv_scale is from extents, it is half of the bounding box size.
+      const float3 delta_shift = voxel_size;  // Shift to diagonal neighbor voxel.
       const float3 delta = float3(sample_surface(uvw + float3(delta_shift.x, 0, 0)),
         sample_surface(uvw + float3(0, delta_shift.y, 0)),
         sample_surface(uvw + float3(0, 0, delta_shift.z))) - sampled_distance;
@@ -30,7 +32,7 @@ void ray_marching(float3 ray_origin, float3 ray_direction, float t_min, float t_
       break;
     }
 
-    t += sampled_distance;
+    t += sampled_distance * max_size; // Re-scale the distance to model space.
 
     if (t > t_max) {
       break;
