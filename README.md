@@ -242,4 +242,186 @@ _distance_texture_rw[uvw] = float_unflip(distance);
 
 跳跃泛洪算法的核心思想是通过一系列递减的“跳跃”步骤来传播距离信息。具体来说，算法从初始种子点开始，以较大的步长同时更新多个距离值，然后逐步减小步长进行更细致的更新。每次跳跃过程中，算法会检查当前像素的邻居，并更新其距离值，以确保最优解的传播。
 
+首先泛洪算法需要两个Buffer交替使用。这里设置Usage为TRANSFER_SRC是为了后续可以从GPU传输到CPU端，然后保存成文件。
+```rust
+let jump_buffer_size = num_of_voxels as u64 * std::mem::size_of::<u32>() as u64;
+hala_gfx::HalaBuffer::new(
+  Rc::clone(&self.resources.context.borrow().logical_device),
+  jump_buffer_size,
+  hala_gfx::HalaBufferUsageFlags::STORAGE_BUFFER | hala_gfx::HalaBufferUsageFlags::TRANSFER_SRC,
+  hala_gfx::HalaMemoryLocation::GpuOnly,
+  "jump_buffer.buffer",
+)?
+
+self.udf_baker_resources.jump_buffer_bis = Some(
+  hala_gfx::HalaBuffer::new(
+    Rc::clone(&self.resources.context.borrow().logical_device),
+    jump_buffer_size,
+    hala_gfx::HalaBufferUsageFlags::STORAGE_BUFFER | hala_gfx::HalaBufferUsageFlags::TRANSFER_SRC,
+    hala_gfx::HalaMemoryLocation::GpuOnly,
+    "jump_buffer_bis.buffer",
+  )?
+);
+```
+
+值得一提的是由于两个Buffer来回切换使用，所以预先创建两个DescriptorSet分别按不同的顺序绑定Buffer方便后续使用。
+```rust
+// 在奇数步跳跃时，从jump_buffer读取数据，写入jump_buffer_bis。
+jump_flooding_odd_descriptor_set.update_storage_buffers(
+  0,
+  0,
+  &[jump_buffer],
+);
+jump_flooding_odd_descriptor_set.update_storage_images(
+  0,
+  1,
+  &[distance_texture],
+);
+jump_flooding_odd_descriptor_set.update_storage_buffers(
+  0,
+  2,
+  &[jump_buffer_bis],
+);
+
+// 在偶数步跳跃时，从jump_buffer_bis读取数据，写入jump_buffer。
+jump_flooding_even_descriptor_set.update_storage_buffers(
+  0,
+  0,
+  &[jump_buffer_bis],
+);
+jump_flooding_even_descriptor_set.update_storage_images(
+  0,
+  1,
+  &[distance_texture],
+);
+jump_flooding_even_descriptor_set.update_storage_buffers(
+  0,
+  2,
+  &[jump_buffer],
+);
+```
+
+接下来进行泛洪跳跃的初始化，初始种子为认为自己是最优解。
+```hlsl
+  const float distance = _distance_texture[int3(id.x, id.y, id.z)];
+  const uint voxel_index = id3(id.x, id.y, id.z);
+  _jump_buffer_rw[voxel_index] = voxel_index;
+```
+
+对最大分辨率求log2获得总计需要跳跃多少步。每步开始offset都缩小为前一步的一半。
+```rust
+let num_of_steps = self.settings.max_resolution.ilog2();
+for i in 1..=num_of_steps {
+  let offset = ((1 << (num_of_steps - i)) as f32 + 0.5).floor() as i32;
+  // 循环迭代，每次从一个Buffer把数据泛洪到另一个Buffer。
+  ...
+}
+```
+
+从当前体素向周围26个方向跳跃采样，并记录距离Mesh表面的最短距离（最优解）更新跳跃Buffer。
+```hlsl
+void main(uint3 id) {
+  float best_distance = _initial_distance;
+  int best_index = 0xFFFFFFFF;
+
+  [unroll(3)]
+  for (int z = -1; z <= 1; ++z)
+    [unroll(3)]
+    for (int y = -1; y <= 1; ++y)
+      [unroll(3)]
+      for (int x = -1; x <= 1; ++x)
+        jump_sample(id, int3(x, y, z) * g_push_constants.offset, best_distance, best_index);
+
+  if (best_index != 0xFFFFFFFF) {
+    _jump_buffer_rw[id3(id.x, id.y, id.z)] = best_index;
+  }
+}
+```
+*注意这里没有对x == 0 && y == 0 && z == 0做判断，因为当前体素如果已经是最短距离后续更新也不会有影响。*
+
+具体的跳跃采样代码如下：
+```hlsl
+void jump_sample(int3 center_coord, int3 offset, inout float best_distance, inout int best_index) {
+  // 当前坐标加上偏移获取采样坐标。
+  int3 sample_coord = center_coord + offset;
+  // 如果采样坐标超出了整个体素体的范围怎不做任何操作。
+  if (
+    sample_coord.x < 0 || sample_coord.y < 0 || sample_coord.z < 0 ||
+    sample_coord.x >= _dimensions.x || sample_coord.y >= _dimensions.y || sample_coord.z >= _dimensions.z
+  ) {
+    return;
+  }
+  // 获取采样坐标下的种子索引。
+  uint voxel_sample_index = _jump_buffer[id3(sample_coord)];
+  // 将索引转换为x, y, z的坐标形式。
+  int3 voxel_sample_coord = unpack_id3(voxel_sample_index);
+  // 获取此坐标到Mesh表面的最近距离。
+  float voxel_sample_distance = _distance_texture[voxel_sample_coord];
+  // 总距离为当前坐标到采样坐标的距离加上采样坐标到Mesh表面的最近距离。
+  // 注：此处除以max_dimension是为了转换到UVW空间计算，因为Distance Texture中保存的是UVW空间中的距离。
+  float distance = length(float3(center_coord) / _max_dimension - float3(voxel_sample_coord) / _max_dimension) + voxel_sample_distance;
+  // 如果以上计算得出的跳跃距离比之前的都要小，则更新最优解。
+  if (distance < best_distance) {
+    best_distance = distance;
+    best_index = voxel_sample_index;
+  }
+}
+```
+
+此算法重复完num_of_steps次后，每个体素格子都完成了最优解的传播。这里以一维空间举例，假设最大分辨率为8，那么log2(8)=3需要三步跳跃，每次跳跃分别距离是4, 2, 1。
+
+    第一步：
+    体素0 计算0->4是否存在最优解
+    体素1 计算1->5是否存在最优解
+    体素2 计算2->6是否存在最优解
+    体素3 计算3->7是否存在最优解
+    体素4 计算4->0是否存在最优解
+    体素5 计算5->1是否存在最优解
+    体素6 计算6->2是否存在最优解
+    体素7 计算7->3是否存在最优解
+    第二步：
+    体素0 计算0->2是否存在最优解
+    体素1 计算1->3是否存在最优解
+    体素2 计算2->4, 2->0是否存在最优解
+    体素3 计算3->5, 3->1是否存在最优解
+    体素4 计算4->6, 4->2是否存在最优解
+    体素5 计算5->7, 5->3是否存在最优解
+    体素6 计算6->4是否存在最优解
+    体素7 计算7->5是否存在最优解
+    第三步：
+    体素0 计算0->1是否存在最优解
+    体素1 计算1->2, 1->0是否存在最优解
+    体素2 计算2->3, 2->1是否存在最优解
+    体素3 计算3->4, 3->2是否存在最优解
+    体素4 计算4->5, 4->3是否存在最优解
+    体素5 计算5->6, 5->4是否存在最优解
+    体素6 计算6->7, 6->5是否存在最优解
+    体素7 计算7->6是否存在最优解
+
+这里假设4为没有被三角形覆盖的体素，整个计算过程计算过4->0, 4->2, 4->3, 4->5, 4->6，那如果假设1为被三角形覆盖的体素？4是否就没法被计算了呢？
+可以看到在第一步中计算过5->1是否存在最优解，那么此时5的索引已经更新成了1，在第三步计算4->5时其实计算的是4->1是否存在最优解。
+
+在执行完以上步骤后，最终需要更新Distance Texture。
+```hlsl
+// 当前体素坐标。
+const uint voxel_index = id3(id.x, id.y, id.z);
+
+// 通过Jump Buffer获取最优的体素Index。
+const uint cloest_voxel_index = _jump_buffer[voxel_index];
+// 将Index转换为坐标。
+const int3 cloest_voxel_coord = unpack_id3(cloest_voxel_index);
+// 获取这个最优的体素坐标中保存的到Mesh的最短距离。
+const float cloest_voxel_distance = _distance_texture_rw[cloest_voxel_coord];
+
+// 当前体素到最优体素的距离（UVW空间，原因同前）。
+const float distance_to_cloest_voxel = length(float3(id) / _max_dimension - float3(cloest_voxel_coord) / _max_dimension);
+
+// 最终距离等于当前体素到最优体素的距离加上最优体素到Mesh的距离再加上烘焙设置中指定的Offset。
+_distance_texture_rw[int3(id.x, id.y, id.z)] = cloest_voxel_distance + distance_to_cloest_voxel + g_push_constants.offset;
+```
+*注意：跳跃泛洪Jump Flooding算法是一种快速近似的方法，并不能保证每个体素都更新为最短距离。*
+
+至此Distance Texture已经保存了计算完成UDF数据。可以进行可视化了。
+
+
 To be continue...
