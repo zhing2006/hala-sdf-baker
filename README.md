@@ -20,23 +20,26 @@ SDF和UDF不仅仅是数据结构，它们更是在多维空间中表示形状�
 
 目前整个开发环境仅在Windows平台上使用RTX 4090和Radeon 780M测试通过（由于本人设备有限暂时无法测试更多的兼容性）。基于`hala-gfx`、`hala-renderer`和`hala-imgui`开发。
 
-1. `hala-gfx`负责Vulkan调用和封装。
-2. `hala-renderer`负责从glTF文件中读取Mesh信息并上传到GPU。
-3. `hala-imgui`是imGUI的Rust桥接，负责用户界面的显示和互动。
+* `hala-gfx`负责Vulkan调用和封装。
+* `hala-renderer`负责从glTF文件中读取Mesh信息并上传到GPU。
+* `hala-imgui`是imGUI的Rust桥接，负责用户界面的显示和互动。
 
 安装1.70+的Rust，如果已经安装`rustup update`为最新版本。使用`git clone --recursive`拉取仓库及其submodule。`cargo build`编译构建Debug版，或者`cargo build -r`构建Release版。
 
-完成编译后可以直接`./target/（debug或release）/hala-sdf-baker -c conf/config.yaml -o ./out/output.txt`运行。点击“Bake”按钮进行烘焙，点击“Save”按钮可以把烘焙结果保存到"./out/output.txt"。
+完成编译后可以直接运行。
+
+    ./target/（debug或release）/hala-sdf-baker -c conf/config.yaml -o ./out/output.txt
+
+点击“Bake”按钮进行烘焙，点击“Save”按钮可以把烘焙结果保存到"./out/output.txt"。
 
 输出文件格式为：
-```
-X轴分辨率 Y轴分辨率 Z轴分辨率
-1号体素的值
-2号体素的值
-。。。
-n-1号体素的值
-n号体素的值
-```
+
+    X轴分辨率 Y轴分辨率 Z轴分辨率
+    1号体素的值
+    2号体素的值
+    。。。
+    n-1号体素的值
+    n号体素的值
 
 ## UDF烘焙
 
@@ -131,7 +134,7 @@ fn snap_box_to_bounds(&mut self) {
 }
 ```
 
-准备全局的UBO，用于存储整个烘焙过程中都需要用到的一些参数，具体如下代码中的注释。
+接下来准备全局的UBO，用于存储整个烘焙过程中都需要用到的一些参数，具体如下代码中的注释。
 ```rust
 pub struct GlobalUniform {
   pub dimensions: [u32; 3],   // 根据需要烘焙Mesh的BoundingBox信息和烘焙体素最大分辨率计算出三个维度的大小。
@@ -173,7 +176,8 @@ tri_uvw.a = (get_vertex_pos(id.x, 0) - _center + _extents) / _max_size;
 tri_uvw.b = (get_vertex_pos(id.x, 1) - _center + _extents) / _max_size;
 tri_uvw.c = (get_vertex_pos(id.x, 2) - _center + _extents) / _max_size;
 ```
-首先通过get_vertex_pos函数从Mesh的index buffer和vertex buffer中读取顶点的位置信息。然后通过传入的center和extents将顶点平移到三维空间中的第一卦限。
+首先通过get_vertex_pos函数从Mesh的index buffer和vertex buffer中读取顶点的位置信息。
+然后通过传入的center和extents将顶点平移到三维空间中的第一卦限。
 最后根据max_size的值归一化到[0, 1]范围的uvw空间。
 
 | 阶段 | 描述 |
@@ -231,5 +235,11 @@ _distance_texture_rw[uvw] = float_unflip(distance);
 至此Distance Texture中，被三角形覆盖的体素，都记录了到Mesh表面最近的距离（无符号）。但没有被三角形覆盖到的区域还是初始值，接下来将要处理这些区域。
 
 ### 第三步：跳跃泛洪
+
+跳跃泛洪（Jump Flooding）是一种用于计算距离变换（Distance Transform）和Voronoi图（Voronoi Diagram）的高效算法，常用于图像处理和计算几何领域。与传统的逐像素传播方法不同，跳跃泛洪算法通过以指数递增的步长“跳跃”而不是逐像素传播，从而极大地提高了计算速度。
+
+#### 工作原理
+
+跳跃泛洪算法的核心思想是通过一系列递减的“跳跃”步骤来传播距离信息。具体来说，算法从初始种子点开始，以较大的步长同时更新多个距离值，然后逐步减小步长进行更细致的更新。每次跳跃过程中，算法会检查当前像素的邻居，并更新其距离值，以确保最优解的传播。
 
 To be continue...
