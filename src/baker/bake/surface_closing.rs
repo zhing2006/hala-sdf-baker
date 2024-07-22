@@ -343,7 +343,7 @@ impl SDFBaker {
     };
 
     // JFA 2 to N passes.
-    let num_of_passes = self.settings.max_resolution.ilog2();
+    let num_of_steps = self.settings.max_resolution.ilog2();
     {
       let program = self.sdf_baker_resources.compute_programs.get("jfa")
         .ok_or(HalaRendererError::new("Failed to get the jfa compute program.", None))?;
@@ -356,7 +356,7 @@ impl SDFBaker {
         }
       };
 
-      for level in 1..=num_of_passes {
+      for level in 1..=num_of_steps {
         command_buffers.set_image_barriers(
           0,
           &[
@@ -392,7 +392,7 @@ impl SDFBaker {
           ],
         );
 
-        let offset = (2u32.pow(num_of_passes - level) as f32 + 0.5).ceil() as i32;
+        let offset = (2u32.pow(num_of_steps - level) as f32 + 0.5).ceil() as i32;
         program.push_constants(
           0,
           command_buffers,
@@ -410,7 +410,7 @@ impl SDFBaker {
       }
     }
 
-    Ok(get_write_voxels_texture(num_of_passes))
+    Ok(get_write_voxels_texture(num_of_steps))
   }
 
 }

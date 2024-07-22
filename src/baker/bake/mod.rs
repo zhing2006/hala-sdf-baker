@@ -842,7 +842,7 @@ impl SDFBaker {
   }
 
   pub fn save_udf<P: AsRef<std::path::Path>>(&self, path: P) -> Result<(), HalaRendererError> {
-    let num_of_passes = self.settings.max_resolution.ilog2();
+    let num_of_steps = self.settings.max_resolution.ilog2();
     let get_read_jump_buffer = |i| {
       if i % 2 == 0 {
         self.udf_baker_resources.jump_buffer_bis.as_ref()
@@ -851,7 +851,7 @@ impl SDFBaker {
       }
     };
 
-    let distance_buffer = get_read_jump_buffer(num_of_passes)
+    let distance_buffer = get_read_jump_buffer(num_of_steps)
       .ok_or(HalaRendererError::new("Failed to get the distance_buffer.", None))?;
     let dimensions = self.estimate_grid_size();
     let num_of_voxels = dimensions[0] * dimensions[1] * dimensions[2];

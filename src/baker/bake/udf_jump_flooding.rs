@@ -63,7 +63,7 @@ impl SDFBaker {
     ),
     HalaRendererError,
   > {
-    let num_of_passes = self.settings.max_resolution.ilog2();
+    let num_of_steps = self.settings.max_resolution.ilog2();
     let get_read_jump_buffer = |i: u32| {
       if i % 2 == 0 { // even
         jump_buffer_bis
@@ -128,7 +128,7 @@ impl SDFBaker {
     jump_flooding_finalize_descriptor_set.update_storage_buffers(
       0,
       1,
-      &[get_read_jump_buffer(num_of_passes)],
+      &[get_read_jump_buffer(num_of_steps)],
     );
 
     Ok((
@@ -209,7 +209,7 @@ impl SDFBaker {
       );
     }
 
-    let num_of_passes = self.settings.max_resolution.ilog2();
+    let num_of_steps = self.settings.max_resolution.ilog2();
     let get_read_jump_buffer = |i| {
       if i % 2 == 0 {
         jump_buffer_bis
@@ -234,8 +234,8 @@ impl SDFBaker {
 
     // Jump flooding.
     {
-      for i in 1..=num_of_passes {
-        let offset = ((1 << (num_of_passes - i)) as f32 + 0.5).floor() as i32;
+      for i in 1..=num_of_steps {
+        let offset = ((1 << (num_of_steps - i)) as f32 + 0.5).floor() as i32;
         let read_buffer = get_read_jump_buffer(i);
         let write_buffer = get_write_jump_buffer(i);
         command_buffers.set_buffer_barriers(
@@ -308,7 +308,7 @@ impl SDFBaker {
 
     // Finalize.
     {
-      let write_buffer = get_read_jump_buffer(num_of_passes);
+      let write_buffer = get_read_jump_buffer(num_of_steps);
       command_buffers.set_buffer_barriers(
         0,
         &[
@@ -367,7 +367,7 @@ impl SDFBaker {
       );
     }
 
-    Ok(get_read_jump_buffer(num_of_passes))
+    Ok(get_read_jump_buffer(num_of_steps))
   }
 
 }
