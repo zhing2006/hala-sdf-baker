@@ -677,7 +677,8 @@ impl SDFBaker {
     num_of_voxels: u32,
     dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
-    self.udf_initialize_create_buffers_images(num_of_voxels, dimensions)?;
+    self.udf_initialize_create_buffers_images(dimensions)?;
+    self.jump_flooding_create_buffers_images(num_of_voxels)?;
 
     Ok(())
   }

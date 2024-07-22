@@ -1,8 +1,53 @@
+use std::rc::Rc;
+
 use hala_renderer::error::HalaRendererError;
 
 use crate::baker::SDFBaker;
 
 impl SDFBaker {
+
+  pub(super) fn jump_flooding_create_buffers_images(
+    &mut self,
+    num_of_voxels: u32,
+  ) -> Result<(), HalaRendererError> {
+    let jump_buffer_size = num_of_voxels as u64 * std::mem::size_of::<u32>() as u64;
+    if let Some(jump_buffer) = &self.udf_baker_resources.jump_buffer {
+      if jump_buffer.size != jump_buffer_size {
+        self.udf_baker_resources.jump_buffer = None;
+      }
+    }
+    if self.udf_baker_resources.jump_buffer.is_none() {
+      self.udf_baker_resources.jump_buffer = Some(
+        hala_gfx::HalaBuffer::new(
+          Rc::clone(&self.resources.context.borrow().logical_device),
+          jump_buffer_size,
+          hala_gfx::HalaBufferUsageFlags::STORAGE_BUFFER | hala_gfx::HalaBufferUsageFlags::TRANSFER_SRC,
+          hala_gfx::HalaMemoryLocation::GpuOnly,
+          "jump_buffer.buffer",
+        )?
+      );
+    };
+
+    let jump_buffer_bis_size = num_of_voxels as u64 * std::mem::size_of::<u32>() as u64;
+    if let Some(jump_buffer_bis) = &self.udf_baker_resources.jump_buffer_bis {
+      if jump_buffer_bis.size != jump_buffer_bis_size {
+        self.udf_baker_resources.jump_buffer_bis = None;
+      }
+    }
+    if self.udf_baker_resources.jump_buffer_bis.is_none() {
+      self.udf_baker_resources.jump_buffer_bis = Some(
+        hala_gfx::HalaBuffer::new(
+          Rc::clone(&self.resources.context.borrow().logical_device),
+          jump_buffer_bis_size,
+          hala_gfx::HalaBufferUsageFlags::STORAGE_BUFFER | hala_gfx::HalaBufferUsageFlags::TRANSFER_SRC,
+          hala_gfx::HalaMemoryLocation::GpuOnly,
+          "jump_buffer_bis.buffer",
+        )?
+      );
+    };
+
+    Ok(())
+  }
 
   pub(super) fn jump_flooding_update(
     &self,
