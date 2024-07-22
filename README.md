@@ -230,6 +230,6 @@ _distance_texture_rw[uvw] = float_unflip(distance);
 
 至此Distance Texture中，被三角形覆盖的体素，都记录了到Mesh表面最近的距离（无符号）。但没有被三角形覆盖到的区域还是初始值，接下来将要处理这些区域。
 
-### 第三步：跳跃洪泛
+### 第三步：跳跃泛洪
 
 To be continue...
