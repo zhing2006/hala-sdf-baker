@@ -5,13 +5,11 @@ cbuffer GlobalUniformBuffer {
   uint3 _dimensions;
   uint _num_of_voxels;
   uint _num_of_triangles;
-  float _max_distance;
   float _initial_distance;
-  float _voxel_size;
-  float3 _min_bounds_extended;
   float _max_size;
-  float3 _max_bounds_extended;
   uint _max_dimension;
+  float3 _min_bounds_extended;
+  float3 _max_bounds_extended;
 };
 
 inline uint id3(uint i, uint j, uint k) {
