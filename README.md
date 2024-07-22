@@ -51,13 +51,13 @@ SDF和UDF不仅仅是数据结构，它们更是在多维空间中表示形状�
 
 烘焙前需要对一些烘焙参数进行设置，其具体作用如下代码中的注释。
 ```rust
-  pub selected_mesh_index: i32, // glTF中可能保存着多个Mesh数据，此字段决定将要被烘焙的是第几个Mesh。
-  pub max_resolution: i32,      // 烘焙输出的体素的体的最长轴的分辨率。比如大小为(1, 2, 4）的Mesh范围，此字段如果为64，那么最终体素的分辨率将是[16, 32, 64]。
-  pub surface_offset: f32,      // 此偏移值会叠加到最终烘焙出的数据上。
-  pub center: [f32; 3],         // 待烘焙数据的BoundingBox的中心位置。
-  pub desired_size: [f32; 3],   // 根据Mesh的BoundingBox大小、max_resolution和指定的边缘预留大小padding计算出的计划烘焙空间的大小。
-  pub actual_size: [f32; 3],    // 根据desired_size调整大小为体素大小的整倍数，也是最终保存数据的大小。
-  pub padding: [f32; 3],        // 在Mesh的BoundingBox外扩大多少个体素作为边界。
+pub selected_mesh_index: i32, // glTF中可能保存着多个Mesh数据，此字段决定将要被烘焙的是第几个Mesh。
+pub max_resolution: i32,      // 烘焙输出的体素的体的最长轴的分辨率。比如大小为(1, 2, 4）的Mesh范围，此字段如果为64，那么最终体素的分辨率将是[16, 32, 64]。
+pub surface_offset: f32,      // 此偏移值会叠加到最终烘焙出的数据上。
+pub center: [f32; 3],         // 待烘焙数据的BoundingBox的中心位置。
+pub desired_size: [f32; 3],   // 根据Mesh的BoundingBox大小、max_resolution和指定的边缘预留大小padding计算出的计划烘焙空间的大小。
+pub actual_size: [f32; 3],    // 根据desired_size调整大小为体素大小的整倍数，也是最终保存数据的大小。
+pub padding: [f32; 3],        // 在Mesh的BoundingBox外扩大多少个体素作为边界。
 ```
 
 center和desired_size计算方法如下：
@@ -197,7 +197,7 @@ voxel_max = max(0, min(voxel_max, int3(_dimensions) - 1));
 ```
 
 最后循环遍历AABB所覆盖的所有体素，计算体素中心离三角形的距离，并写入到Distance Texture中。
-```
+```hlsl
 for (int z = voxel_min.z; z <= voxel_max.z; ++z) {
   for (int y = voxel_min.y; y <= voxel_max.y; ++y) {
     for (int x = voxel_min.x; x <= voxel_max.x; ++x) {
