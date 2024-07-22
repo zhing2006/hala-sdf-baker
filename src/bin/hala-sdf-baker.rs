@@ -174,12 +174,14 @@ impl HalaApplication for SDFBakerApplication {
             .build(|| {
               let _ = ui.checkbox("To Bake SDF(checked) or UDF(unchecked)", &mut baker.settings.is_sdf);
 
-              if let Some(_t) = ui.tree_node("Advanced Settings") {
-                let _ = ui.input_int("Sign Passes Count", &mut baker.settings.sign_passes_count).build();
-                let _ = ui.input_float("In/Out Threshold", &mut baker.settings.in_out_threshold).build();
-                let _ = ui.input_float("Surface Offset", &mut baker.settings.surface_offset).build();
+              if baker.settings.is_sdf {
+                if let Some(_t) = ui.tree_node("Advanced Settings") {
+                  let _ = ui.input_int("Sign Passes Count", &mut baker.settings.sign_passes_count).build();
+                  let _ = ui.input_float("In/Out Threshold", &mut baker.settings.in_out_threshold).build();
+                  let _ = ui.input_float("Surface Offset", &mut baker.settings.surface_offset).build();
 
-                ui.separator();
+                  ui.separator();
+                }
               }
 
               ui.tree_node_config("Common Settings").opened(true, imgui::Condition::FirstUseEver).build(|| {
@@ -222,9 +224,13 @@ impl HalaApplication for SDFBakerApplication {
                 let _ = ui.checkbox("Show Desired Box", &mut baker.settings.show_desired_box);
                 let _ = ui.checkbox("Show Actual Box", &mut baker.settings.show_actual_box);
                 let _ = ui.checkbox("Show Wireframe", &mut baker.settings.show_wireframe);
-                let _ = ui.checkbox("Show Render Targets", &mut baker.settings.show_render_targets);
-                let _ = ui.checkbox("Show Ray Map", &mut baker.settings.show_ray_map);
-                let _ = ui.checkbox("Show SDF", &mut baker.settings.show_sdf);
+                if baker.settings.is_sdf {
+                  let _ = ui.checkbox("Show Render Targets", &mut baker.settings.show_render_targets);
+                  let _ = ui.checkbox("Show Ray Map", &mut baker.settings.show_ray_map);
+                  let _ = ui.checkbox("Show SDF", &mut baker.settings.show_sdf);
+                } else {
+                  let _ = ui.checkbox("Show UDF", &mut baker.settings.show_sdf);
+                }
               }
 
               ui.separator();

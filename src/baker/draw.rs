@@ -79,7 +79,7 @@ impl SDFBaker {
     );
 
     // Draw debug images to screen.
-    if self.settings.show_render_targets {
+    if self.settings.is_sdf && self.settings.show_render_targets {
       if self.sdf_baker_resources.render_targets[0].is_some() {
         self.debug_draw_image_2_screen(
           index,
@@ -116,7 +116,7 @@ impl SDFBaker {
 
     // Draw debug image3d.
     let mvp_mtx = self.get_mvp_matrix_in_scene(self.settings.selected_mesh_index).to_cols_array();
-    if self.settings.show_ray_map && (self.sdf_baker_resources.ray_map.is_some() || self.udf_baker_resources.distance_texture.is_some()) {
+    if self.settings.is_sdf && self.settings.show_ray_map && self.sdf_baker_resources.ray_map.is_some() {
       self.debug_draw_image3d(
         index,
         command_buffers,
@@ -124,14 +124,25 @@ impl SDFBaker {
         &mvp_mtx,
       )?;
     }
-    if self.settings.show_sdf && (self.sdf_baker_resources.distance_texture.is_some() || self.udf_baker_resources.distance_texture.is_some()) {
-      self.debug_draw_sdf(
-        index,
-        command_buffers,
-        &scene::HalaBounds::new_with_size(self.settings.center, self.settings.actual_size),
-        &[1.0, 1.0, 1.0, 1.0],
-        0.0,
-      )?;
+    if self.settings.show_sdf {
+      if self.settings.is_sdf {
+        if self.sdf_baker_resources.distance_texture.is_some() {
+          self.debug_draw_sdf(
+            index,
+            command_buffers,
+            &scene::HalaBounds::new_with_size(self.settings.center, self.settings.actual_size),
+            &[1.0, 1.0, 1.0, 1.0],
+            0.0,
+          )?;
+        }
+      } else if self.udf_baker_resources.distance_texture.is_some() {
+        self.debug_draw_image3d(
+          index,
+          command_buffers,
+          &scene::HalaBounds::new_with_size(self.settings.center, self.settings.actual_size),
+          &mvp_mtx,
+        )?;
+      }
     }
 
     if self.settings.show_desired_box {
