@@ -71,6 +71,13 @@ impl SDFBaker {
         jump_buffer
       }
     };
+    let get_write_jump_buffer = |i: u32| {
+      if i % 2 == 0 { // even
+        jump_buffer
+      } else {  // odd
+        jump_buffer_bis
+      }
+    };
 
     let jump_flooding_initialize_descriptor_set = self.udf_baker_resources.descriptor_sets.get("jump_flooding_init")
       .ok_or(HalaRendererError::new("Failed to get the jump floodinginitialize descriptor set.", None))?;
@@ -91,7 +98,7 @@ impl SDFBaker {
       0,
       &[jump_buffer],
     );
-    jump_flooding_odd_descriptor_set.update_storage_images(
+    jump_flooding_odd_descriptor_set.update_sampled_images(
       0,
       1,
       &[distance_texture],
@@ -108,7 +115,7 @@ impl SDFBaker {
       0,
       &[jump_buffer_bis],
     );
-    jump_flooding_even_descriptor_set.update_storage_images(
+    jump_flooding_even_descriptor_set.update_sampled_images(
       0,
       1,
       &[distance_texture],
@@ -120,14 +127,19 @@ impl SDFBaker {
     );
     let jump_flooding_finalize_descriptor_set = self.udf_baker_resources.descriptor_sets.get("jump_flooding_final")
       .ok_or(HalaRendererError::new("Failed to get the jump flooding finalize descriptor set.", None))?;
+    jump_flooding_finalize_descriptor_set.update_storage_buffers(
+      0,
+      0,
+      &[get_write_jump_buffer(num_of_steps)],
+    );
     jump_flooding_finalize_descriptor_set.update_storage_images(
       0,
-      0,
+      1,
       &[distance_texture],
     );
     jump_flooding_finalize_descriptor_set.update_storage_buffers(
       0,
-      1,
+      2,
       &[get_read_jump_buffer(num_of_steps)],
     );
 
@@ -234,6 +246,23 @@ impl SDFBaker {
 
     // Jump flooding.
     {
+      command_buffers.set_image_barriers(
+        0,
+        &[
+          hala_gfx::HalaImageBarrierInfo {
+            old_layout: hala_gfx::HalaImageLayout::GENERAL,
+            new_layout: hala_gfx::HalaImageLayout::GENERAL,
+            src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+            src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
+            dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+            dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
+            aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
+            image: distance_texture.raw,
+            ..Default::default()
+          }
+        ],
+      );
+
       for i in 1..=num_of_steps {
         let offset = ((1 << (num_of_steps - i)) as f32 + 0.5).floor() as i32;
         let read_buffer = get_read_jump_buffer(i);
@@ -257,22 +286,6 @@ impl SDFBaker {
               buffer: write_buffer.raw,
               ..Default::default()
             },
-          ],
-        );
-        command_buffers.set_image_barriers(
-          0,
-          &[
-            hala_gfx::HalaImageBarrierInfo {
-              old_layout: hala_gfx::HalaImageLayout::GENERAL,
-              new_layout: hala_gfx::HalaImageLayout::GENERAL,
-              src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-              src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
-              dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-              dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
-              aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
-              image: distance_texture.raw,
-              ..Default::default()
-            }
           ],
         );
 
@@ -308,17 +321,27 @@ impl SDFBaker {
 
     // Finalize.
     {
+      let read_buffer = get_write_jump_buffer(num_of_steps);
       let write_buffer = get_read_jump_buffer(num_of_steps);
       command_buffers.set_buffer_barriers(
         0,
         &[
           hala_gfx::HalaBufferBarrierInfo{
             src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+            src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
+            dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
+            dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
+            size: read_buffer.size,
+            buffer: read_buffer.raw,
+            ..Default::default()
+          },
+          hala_gfx::HalaBufferBarrierInfo{
+            src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
             dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
             size: write_buffer.size,
             buffer: write_buffer.raw,
             ..Default::default()
-          }
+          },
         ],
       );
 
