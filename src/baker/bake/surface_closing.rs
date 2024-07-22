@@ -96,7 +96,7 @@ impl SDFBaker {
 
     let jfa_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("jfa")
       .ok_or(HalaRendererError::new("Failed to get the jfa descriptor set.", None))?;
-    jfa_descriptor_set.update_storage_images(
+    jfa_descriptor_set.update_sampled_images(
       0,
       0,
       &[voxels_texture],
@@ -109,7 +109,7 @@ impl SDFBaker {
 
     let jfa_2_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("jfa_2")
       .ok_or(HalaRendererError::new("Failed to get the jfa_2 descriptor set.", None))?;
-    jfa_2_descriptor_set.update_storage_images(
+    jfa_2_descriptor_set.update_sampled_images(
       0,
       0,
       &[voxels_texture_bis],

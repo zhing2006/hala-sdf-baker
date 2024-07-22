@@ -118,7 +118,7 @@ compute_programs:
     shader_file_path: /surface_closing/jfa.cs_6_8.spv
     push_constant_size: 4
     bindings:
-      - storage_image
+      - sampled_image
       - storage_image
   distance_transform_winding:
     shader_file_path: /distance_transform_winding/distance_transform_winding.cs_6_8.spv

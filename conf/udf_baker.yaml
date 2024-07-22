@@ -32,9 +32,9 @@ compute_programs:
       - storage_buffer
   jump_flooding_final:
     shader_file_path: /udf/jump_flooding_finalize.cs_6_8.spv
-    push_constant_size: 0
+    push_constant_size: 4
     bindings:
-      - sampled_image
+      - storage_image
       - storage_buffer
 
 graphics_programs:

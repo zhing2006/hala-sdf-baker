@@ -120,7 +120,7 @@ impl SDFBaker {
     );
     let jump_flooding_finalize_descriptor_set = self.udf_baker_resources.descriptor_sets.get("jump_flooding_final")
       .ok_or(HalaRendererError::new("Failed to get the jump flooding finalize descriptor set.", None))?;
-    jump_flooding_finalize_descriptor_set.update_sampled_images(
+    jump_flooding_finalize_descriptor_set.update_storage_images(
       0,
       0,
       &[distance_texture],
@@ -331,7 +331,7 @@ impl SDFBaker {
             src_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
             src_access_mask: hala_gfx::HalaAccessFlags2::SHADER_WRITE,
             dst_stage_mask: hala_gfx::HalaPipelineStageFlags2::COMPUTE_SHADER,
-            dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ,
+            dst_access_mask: hala_gfx::HalaAccessFlags2::SHADER_READ | hala_gfx::HalaAccessFlags2::SHADER_WRITE,
             aspect_mask: hala_gfx::HalaImageAspectFlags::COLOR,
             image: distance_texture.raw,
             ..Default::default()
@@ -349,6 +349,13 @@ impl SDFBaker {
           &self.udf_baker_resources.static_descriptor_set,
           jump_flooding_finalize_descriptor_set,
         ],
+      );
+
+      program.push_constants_f32(
+        0,
+        command_buffers,
+        0,
+        &[self.settings.surface_offset],
       );
 
       program.dispatch(

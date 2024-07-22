@@ -174,14 +174,14 @@ impl HalaApplication for SDFBakerApplication {
             .build(|| {
               let _ = ui.checkbox("To Bake SDF(checked) or UDF(unchecked)", &mut baker.settings.is_sdf);
 
-              if baker.settings.is_sdf {
-                if let Some(_t) = ui.tree_node("Advanced Settings") {
+              if let Some(_t) = ui.tree_node("Advanced Settings") {
+                if baker.settings.is_sdf {
                   let _ = ui.input_int("Sign Passes Count", &mut baker.settings.sign_passes_count).build();
                   let _ = ui.input_float("In/Out Threshold", &mut baker.settings.in_out_threshold).build();
-                  let _ = ui.input_float("Surface Offset", &mut baker.settings.surface_offset).build();
-
-                  ui.separator();
                 }
+                let _ = ui.input_float("Surface Offset", &mut baker.settings.surface_offset).build();
+
+                ui.separator();
               }
 
               ui.tree_node_config("Common Settings").opened(true, imgui::Condition::FirstUseEver).build(|| {
