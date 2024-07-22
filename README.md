@@ -134,14 +134,14 @@ fn snap_box_to_bounds(&mut self) {
 准备全局的UBO，用于存储整个烘焙过程中都需要用到的一些参数，具体如下代码中的注释。
 ```rust
 pub struct GlobalUniform {
-  pub dimensions: [u32; 3],         // 根据需要烘焙Mesh的BoundingBox信息和烘焙体素最大分辨率计算出三个维度的大小。
-  pub num_of_voxels: u32,           // 总体素的数量，其值为dimensions[0] * dimensions[1] * dimensions[2]。
-  pub num_of_triangles: u32,        // 待烘焙Mesh的总三角形数量。
-  pub initial_distance: f32,        // 初始化UDF的值。根据整个烘焙区域最长边的长度，归一化后的烘焙BoundingBox的对角线长度的1.01倍（整个UDF中不可能有值大于此值）。
-  pub max_size: f32,                // 根据整个烘焙区域最长边的长度。
-  pub max_dimension: u32,           // 整个体素空间最长边的体素数量。
-  pub min_bounds_extended: [f32; 3],// 烘焙区域BoundingBox的最小坐标。
-  pub max_bounds_extended: [f32; 3],// 烘焙区域BoundingBox的最大坐标。
+  pub dimensions: [u32; 3],   // 根据需要烘焙Mesh的BoundingBox信息和烘焙体素最大分辨率计算出三个维度的大小。
+  pub num_of_voxels: u32,     // 总体素的数量，其值为dimensions[0] * dimensions[1] * dimensions[2]。
+  pub num_of_triangles: u32,  // 待烘焙Mesh的总三角形数量。
+  pub initial_distance: f32,  // 初始化UDF的值。根据整个烘焙区域最长边的长度，归一化后的烘焙BoundingBox的对角线长度的1.01倍（整个UDF中不可能有值大于此值）。
+  pub max_size: f32,          // 根据整个烘焙区域最长边的长度。
+  pub max_dimension: u32,     // 整个体素空间最长边的体素数量。
+  pub center: [f32; 3],       // 烘焙区域BoundingBox的中心坐标。
+  pub extents: [f32; 3],      // 烘焙区域BoundingBox的半长。
 }
 ```
 
@@ -160,5 +160,76 @@ hala_gfx::HalaImage::new_3d(
 ```
 
 ### 第二步：填入初始值
+
+这一步最为简单。唯一需要注意的是这里写入的不是初始距离的float形式，而是uint。这在下一个Shader中会详细解释。
+```hlsl
+_distance_texture_rw[int3(id.x, id.y, id.z)] = float_flip(_initial_distance);
+```
+
+接下来是遍历Mesh中的所有三角形，id.x是正在遍历的三角形的索引号。
+```hlsl
+Triangle tri_uvw;
+tri_uvw.a = (get_vertex_pos(id.x, 0) - _center + _extents) / _max_size;
+tri_uvw.b = (get_vertex_pos(id.x, 1) - _center + _extents) / _max_size;
+tri_uvw.c = (get_vertex_pos(id.x, 2) - _center + _extents) / _max_size;
+```
+首先通过get_vertex_pos函数从Mesh的index buffer和vertex buffer中读取顶点的位置信息。然后通过传入的center和extents将顶点平移到三维空间中的第一卦限。
+最后根据max_size的值归一化到[0, 1]范围的uvw空间。
+
+| 阶段 | 描述 |
+|------|------|
+|![Image Bound 0](images/bound_0.png)| *原始区域* |
+|![Image Bound 1](images/bound_1.png)| *平移到第一卦限* |
+|![Image Bound 2](images/bound_2.png)| *归一化到UVW空间* |
+
+紧接着计算三角形所覆盖区域的AABB，然后通过_max_dimension变换到体素空间并向外扩大一圈。
+```hlsl
+const float3 aabb_min = min(tri_uvw.a, min(tri_uvw.b, tri_uvw.c));
+const float3 aabb_max = max(tri_uvw.a, max(tri_uvw.b, tri_uvw.c));
+int3 voxel_min = int3(aabb_min * _max_dimension) - GRID_MARGIN;
+int3 voxel_max = int3(aabb_max * _max_dimension) + GRID_MARGIN;
+voxel_min = max(0, min(voxel_min, int3(_dimensions) - 1));
+voxel_max = max(0, min(voxel_max, int3(_dimensions) - 1));
+```
+
+最后循环遍历AABB所覆盖的所有体素，计算体素中心离三角形的距离，并写入到Distance Texture中。
+```
+for (int z = voxel_min.z; z <= voxel_max.z; ++z) {
+  for (int y = voxel_min.y; y <= voxel_max.y; ++y) {
+    for (int x = voxel_min.x; x <= voxel_max.x; ++x) {
+      const float3 voxel_coord = (float3(x, y, z) + float3(0.5, 0.5, 0.5)) / _max_dimension;
+      float distance = point_distance_to_triangle(voxel_coord, tri_uvw);
+      uint distance_as_uint = float_flip(distance);
+      InterlockedMin(_distance_texture_rw[int3(x, y, z)], distance_as_uint);
+    }
+  }
+}
+```
+注意，这里使用了InterlockedMin原子比较写入最小值函数，因为此时多个GPU线程可能在同时更新同一个体素。
+此外还使用float_flip将float类型的距离转换为了uint，原因是InterlockedMin需要操作uint类型数据（并不是所有硬件都支持float的InterlockedMin）。
+这里详细看一下float_flip函数的实现。
+```hlsl
+inline uint float_flip(float fl) {
+  uint f = asuint(fl);
+  return (f << 1) | (f >> 31);
+}
+```
+此函数将float数值的第一位也就是符号位移动到了最后，这样通过InterlockedMin比较的时候就能够获取到绝对值最小的值，符合UDF的定义。
+
+![Image IEEE 754](images/ieee_754.png)
+
+通过float类型的定义可以看出，只要将符号位放到最后一位，就可以和uint一样比较大小了。
+
+完成所有三角形的处理后，再使用float_unflip函数将符号位移动回原来的位置。
+
+```hlsl
+const int3 uvw = int3(id.x, id.y, id.z);
+const uint distance = _distance_texture_rw[uvw];
+_distance_texture_rw[uvw] = float_unflip(distance);
+```
+
+至此Distance Texture中，被三角形覆盖的体素，都记录了到Mesh表面最近的距离（无符号）。但没有被三角形覆盖到的区域还是初始值，接下来将要处理这些区域。
+
+### 第三步：跳跃洪泛
 
 To be continue...
