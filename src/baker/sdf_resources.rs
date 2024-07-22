@@ -19,9 +19,9 @@ pub(super) struct SDFBakerCSGlobalUniform {
   pub num_of_triangles: u32,
   pub max_size: f32,
   pub padding0: f32,
-  pub min_bounds_extended: [f32; 3],
+  pub center: [f32; 3],
   pub padding1: f32,
-  pub max_bounds_extended: [f32; 3],
+  pub extents: [f32; 3],
 }
 
 #[repr(C, align(16))]

@@ -19,13 +19,10 @@ void main(uint3 id: SV_DispatchThreadID) {
 //     printf("_index_stride: %d\n", _index_stride);
 //   }
 
-  const float3 extents = 0.5 * (_max_bounds_extended - _min_bounds_extended);
-  const float3 center = 0.5 * (_max_bounds_extended + _min_bounds_extended);
-
   Triangle tri_uvw;
-  tri_uvw.a = (get_vertex_pos(id.x, 0) - center + extents) / _max_size;
-  tri_uvw.b = (get_vertex_pos(id.x, 1) - center + extents) / _max_size;
-  tri_uvw.c = (get_vertex_pos(id.x, 2) - center + extents) / _max_size;
+  tri_uvw.a = (get_vertex_pos(id.x, 0) - _center + _extents) / _max_size;
+  tri_uvw.b = (get_vertex_pos(id.x, 1) - _center + _extents) / _max_size;
+  tri_uvw.c = (get_vertex_pos(id.x, 2) - _center + _extents) / _max_size;
 
   const float3 aabb_min = min(tri_uvw.a, min(tri_uvw.b, tri_uvw.c));
   const float3 aabb_max = max(tri_uvw.a, max(tri_uvw.b, tri_uvw.c));

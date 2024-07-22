@@ -8,8 +8,9 @@ cbuffer GlobalUniformBuffer {
   float _initial_distance;
   float _max_size;
   uint _max_dimension;
-  float3 _min_bounds_extended;
-  float3 _max_bounds_extended;
+  float3 _center;
+  float _padding0;
+  float3 _extents;
 };
 
 inline uint id3(uint i, uint j, uint k) {

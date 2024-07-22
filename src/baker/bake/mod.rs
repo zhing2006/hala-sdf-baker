@@ -367,9 +367,9 @@ impl SDFBaker {
       num_of_triangles,
       max_size,
       padding0: 0.0,
-      min_bounds_extended: bounds.get_min(),
+      center: bounds.center,
       padding1: 0.0,
-      max_bounds_extended: bounds.get_max(),
+      extents: bounds.extents,
     };
     log::debug!("Global uniform: {:?}", global_uniform);
     self.sdf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
@@ -713,10 +713,11 @@ impl SDFBaker {
       num_of_voxels,
       num_of_triangles,
       initial_distance: max_distance * 1.01,
-      min_bounds_extended: bounds.get_min(),
       max_size,
-      max_bounds_extended: bounds.get_max(),
       max_dimension,
+      center: bounds.center,
+      padding0: 0.0,
+      extents: bounds.extents,
     };
     log::debug!("Global uniform: {:?}", global_uniform);
     self.udf_baker_resources.global_uniform_buffer.update_memory(0, std::slice::from_ref(&global_uniform))?;
