@@ -93,10 +93,10 @@ impl SDFBaker {
 
   /// Snap the actual box to the bounds.
   pub fn snap_box_to_bounds(&mut self) {
-    let max_extent = self.settings.desired_size.iter().fold(0.0, |a: f32, b| a.max(*b));
-    let ref_axis = if max_extent == self.settings.desired_size[0] {
+    let max_size = self.settings.desired_size.iter().fold(0.0, |a: f32, b| a.max(*b));
+    let ref_axis = if max_size == self.settings.desired_size[0] {
       Axis::X
-    } else if max_extent == self.settings.desired_size[1] {
+    } else if max_size == self.settings.desired_size[1] {
       Axis::Y
     } else {
       Axis::Z
@@ -104,24 +104,24 @@ impl SDFBaker {
 
     self.settings.actual_size = match ref_axis {
       Axis::X => {
-        let dim_x = (self.settings.max_resolution as f32 * self.settings.desired_size[0] / max_extent).round().max(1.0);
-        let dim_y = (self.settings.max_resolution as f32 * self.settings.desired_size[1] / max_extent).ceil().max(1.0);
-        let dim_z = (self.settings.max_resolution as f32 * self.settings.desired_size[2] / max_extent).ceil().max(1.0);
-        let voxel_size = max_extent / dim_x;
+        let dim_x = (self.settings.max_resolution as f32 * self.settings.desired_size[0] / max_size).round().max(1.0);
+        let dim_y = (self.settings.max_resolution as f32 * self.settings.desired_size[1] / max_size).ceil().max(1.0);
+        let dim_z = (self.settings.max_resolution as f32 * self.settings.desired_size[2] / max_size).ceil().max(1.0);
+        let voxel_size = max_size / dim_x;
         [dim_x * voxel_size, dim_y * voxel_size, dim_z * voxel_size]
       },
       Axis::Y => {
-        let dim_x = (self.settings.max_resolution as f32 * self.settings.desired_size[0] / max_extent).ceil().max(1.0);
-        let dim_y = (self.settings.max_resolution as f32 * self.settings.desired_size[1] / max_extent).round().max(1.0);
-        let dim_z = (self.settings.max_resolution as f32 * self.settings.desired_size[2] / max_extent).ceil().max(1.0);
-        let voxel_size = max_extent / dim_y;
+        let dim_x = (self.settings.max_resolution as f32 * self.settings.desired_size[0] / max_size).ceil().max(1.0);
+        let dim_y = (self.settings.max_resolution as f32 * self.settings.desired_size[1] / max_size).round().max(1.0);
+        let dim_z = (self.settings.max_resolution as f32 * self.settings.desired_size[2] / max_size).ceil().max(1.0);
+        let voxel_size = max_size / dim_y;
         [dim_x * voxel_size, dim_y * voxel_size, dim_z * voxel_size]
       },
       Axis::Z => {
-        let dim_x = (self.settings.max_resolution as f32 * self.settings.desired_size[0] / max_extent).ceil().max(1.0);
-        let dim_y = (self.settings.max_resolution as f32 * self.settings.desired_size[1] / max_extent).ceil().max(1.0);
-        let dim_z = (self.settings.max_resolution as f32 * self.settings.desired_size[2] / max_extent).round().max(1.0);
-        let voxel_size = max_extent / dim_z;
+        let dim_x = (self.settings.max_resolution as f32 * self.settings.desired_size[0] / max_size).ceil().max(1.0);
+        let dim_y = (self.settings.max_resolution as f32 * self.settings.desired_size[1] / max_size).ceil().max(1.0);
+        let dim_z = (self.settings.max_resolution as f32 * self.settings.desired_size[2] / max_size).round().max(1.0);
+        let voxel_size = max_size / dim_z;
         [dim_x * voxel_size, dim_y * voxel_size, dim_z * voxel_size]
       },
     }
