@@ -271,7 +271,7 @@ graphics_programs:
       line_width: 1.0
     depth_info:
       test_enable: true
-      write_enable: false
+      write_enable: true
       compare_op: greater_or_equal
   sdf_visualization:
     vertex_shader_file_path: /sdf_visualization.vs_6_8.spv
