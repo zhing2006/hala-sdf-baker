@@ -18,7 +18,7 @@ SDF和UDF不仅仅是数据结构，它们更是在多维空间中表示形状�
 
 ## 开发环境搭建
 
-目前整个开发环境仅在Windows平台上使用RTX 4090测试通过（由于本人设备有限暂时无法测试更多的兼容性）。基于`hala-gfx`、`hala-renderer`和`hala-imgui`开发。
+目前整个开发环境仅在Windows平台上使用RTX 4090和Radeon 780M测试通过（由于本人设备有限暂时无法测试更多的兼容性）。基于`hala-gfx`、`hala-renderer`和`hala-imgui`开发。
 
 1. `hala-gfx`负责Vulkan调用和封装。
 2. `hala-renderer`负责从glTF文件中读取Mesh信息并上传到GPU。
