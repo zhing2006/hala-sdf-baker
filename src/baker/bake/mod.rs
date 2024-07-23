@@ -301,7 +301,7 @@ impl SDFBaker {
     // Triangle ID buffer max size.
     // Assume only half of the voxels have triangles.
     let num_of_voxels_has_triangles = dimensions[0] as f64 * dimensions[1] as f64 * dimensions[2] as f64 / 2.0f64;
-    // Assum one triangle is shared by 8 voxels. Assume the number of triangles in a voxel is sqrt(_numOfTriangles).
+    // Assume one triangle is shared by 8 voxels. Assume the number of triangles in a voxel is sqrt(_numOfTriangles).
     let avg_triangles_per_voxel = (num_of_triangles as f64 / num_of_voxels_has_triangles * 8.0f64).max((num_of_triangles as f64).sqrt());
     let upper_bound_count64 = (num_of_voxels_has_triangles * avg_triangles_per_voxel) as u64;
     let upper_bound_count = (1536 * (1 << 18)).min(upper_bound_count64) as u32; // Limit the buffer size to 1536 * 2^18.
