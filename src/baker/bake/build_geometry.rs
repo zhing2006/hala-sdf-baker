@@ -215,7 +215,6 @@ impl SDFBaker {
       &hala_gfx::HalaDescriptorSet,
       &hala_gfx::HalaDescriptorSet,
       &hala_gfx::HalaDescriptorSet,
-      &hala_gfx::HalaDescriptorSet,
     ),
     HalaRendererError
   > {
@@ -240,49 +239,32 @@ impl SDFBaker {
       std::slice::from_ref(&conservative_rasterization_uniform)
     )?;
 
-    let generate_triangles_uvw_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("gen_tri_in_uvw")
-      .ok_or(HalaRendererError::new("Failed to get the generate_triangles_uvw descriptor set.", None))?;
-    generate_triangles_uvw_descriptor_set.update_uniform_buffers(
+    let generate_triangles_uvw_and_dir_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("gen_tri_uvw_and_dir")
+      .ok_or(HalaRendererError::new("Failed to get the generate_triangles_uvw_and_dir descriptor set.", None))?;
+    generate_triangles_uvw_and_dir_descriptor_set.update_uniform_buffers(
       0,
       0,
       &[&self.sdf_baker_resources.mesh_uniform_buffer],
     );
-    generate_triangles_uvw_descriptor_set.update_storage_buffers(
+    generate_triangles_uvw_and_dir_descriptor_set.update_storage_buffers(
       0,
       1,
       &[index_buffer],
     );
-    generate_triangles_uvw_descriptor_set.update_storage_buffers(
+    generate_triangles_uvw_and_dir_descriptor_set.update_storage_buffers(
       0,
       2,
       &[vertex_buffer],
     );
-    generate_triangles_uvw_descriptor_set.update_storage_buffers(
-      0,
-      3,
-      &[triangle_uvw_buffer],
-    );
-    let calculate_triangles_direction_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("cal_tri_dir")
-      .ok_or(HalaRendererError::new("Failed to get the calculate_triangles_direction descriptor set.", None))?;
-    calculate_triangles_direction_descriptor_set.update_uniform_buffers(
-      0,
-      0,
-      &[&self.sdf_baker_resources.mesh_uniform_buffer],
-    );
-    calculate_triangles_direction_descriptor_set.update_storage_buffers(
-      0,
-      1,
-      &[index_buffer],
-    );
-    calculate_triangles_direction_descriptor_set.update_storage_buffers(
-      0,
-      2,
-      &[vertex_buffer],
-    );
-    calculate_triangles_direction_descriptor_set.update_storage_buffers(
+    generate_triangles_uvw_and_dir_descriptor_set.update_storage_buffers(
       0,
       3,
       &[coord_flip_buffer],
+    );
+    generate_triangles_uvw_and_dir_descriptor_set.update_storage_buffers(
+      0,
+      4,
+      &[triangle_uvw_buffer],
     );
     let conservative_rasterization_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("conservative_rasterization")
       .ok_or(HalaRendererError::new("Failed to get the conservative_rasterization descriptor set.", None))?;
@@ -377,8 +359,7 @@ impl SDFBaker {
     );
 
     Ok((
-      generate_triangles_uvw_descriptor_set,
-      calculate_triangles_direction_descriptor_set,
+      generate_triangles_uvw_and_dir_descriptor_set,
       conservative_rasterization_descriptor_set,
       write_uvw_and_coverage_descriptor_set,
       write_triangle_ids_to_voxels_descriptor_set,
@@ -393,8 +374,7 @@ impl SDFBaker {
     coord_flip_buffer: &hala_gfx::HalaBuffer,
     aabb_buffer: &hala_gfx::HalaBuffer,
     vertices_buffer: &hala_gfx::HalaBuffer,
-    generate_triangles_uvw_descriptor_set: &hala_gfx::HalaDescriptorSet,
-    calculate_triangles_direction_descriptor_set: &hala_gfx::HalaDescriptorSet,
+    generate_triangles_uvw_and_dir_descriptor_set: &hala_gfx::HalaDescriptorSet,
     conservative_rasterization_descriptor_set: &hala_gfx::HalaDescriptorSet,
     num_of_triangles: u32,
   ) -> Result<(), HalaRendererError> {
@@ -423,43 +403,22 @@ impl SDFBaker {
       );
     }
 
-    // Generate triangles UVW.
+    // Generate triangles UVW and direction.
     {
-      let generate_triangles_uvw_program = self.sdf_baker_resources.compute_programs.get("gen_tri_in_uvw")
+      let generate_triangles_uvw_and_dir_program = self.sdf_baker_resources.compute_programs.get("gen_tri_uvw_and_dir")
         .ok_or(HalaRendererError::new("Failed to get the generate_triangles_uvw program.", None))?;
-      generate_triangles_uvw_program.bind(
+      generate_triangles_uvw_and_dir_program.bind(
         0,
         command_buffers,
         &[
           &self.sdf_baker_resources.static_descriptor_set,
-          generate_triangles_uvw_descriptor_set,
+          generate_triangles_uvw_and_dir_descriptor_set,
         ],
       );
-      generate_triangles_uvw_program.dispatch(
+      generate_triangles_uvw_and_dir_program.dispatch(
         0,
         command_buffers,
-        (num_of_triangles as f32 / 64.0).ceil() as u32,
-        1,
-        1,
-      );
-    }
-
-    // Calculate triangles direction.
-    {
-      let calculate_triangles_direction_program = self.sdf_baker_resources.compute_programs.get("cal_tri_dir")
-        .ok_or(HalaRendererError::new("Failed to get the calculate_triangles_direction program.", None))?;
-      calculate_triangles_direction_program.bind(
-        0,
-        command_buffers,
-        &[
-          &self.sdf_baker_resources.static_descriptor_set,
-          calculate_triangles_direction_descriptor_set,
-        ],
-      );
-      calculate_triangles_direction_program.dispatch(
-        0,
-        command_buffers,
-        (num_of_triangles as f32 / 64.0).ceil() as u32,
+        (num_of_triangles + 64 - 1) / 64,
         1,
         1,
       );
@@ -524,7 +483,7 @@ impl SDFBaker {
         conservative_rasterization_program.dispatch(
           0,
           command_buffers,
-          (num_of_triangles as f32 / 64.0).ceil() as u32,
+          (num_of_triangles + 64 - 1) / 64,
           1,
           1,
         );

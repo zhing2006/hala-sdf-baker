@@ -413,8 +413,7 @@ impl SDFBaker {
       voxels_texture_bis,
     )?;
     let (
-      generate_triangles_uvw_descriptor_set,
-      calculate_triangles_direction_descriptor_set,
+      generate_triangles_uvw_and_dir_descriptor_set,
       conservative_rasterization_descriptor_set,
       write_uvw_and_coverage_descriptor_set,
       write_triangle_ids_to_voxels_descriptor_set,
@@ -511,8 +510,7 @@ impl SDFBaker {
       coord_flip_buffer,
       aabb_buffer,
       vertices_buffer,
-      generate_triangles_uvw_descriptor_set,
-      calculate_triangles_direction_descriptor_set,
+      generate_triangles_uvw_and_dir_descriptor_set,
       conservative_rasterization_descriptor_set,
       num_of_triangles,
     )?;

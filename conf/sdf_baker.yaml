@@ -11,19 +11,12 @@ compute_programs:
       - storage_image
       - storage_image
       - storage_image
-  gen_tri_in_uvw:
-    shader_file_path: /build_geometry/gen_tri_in_uvw.cs_6_8.spv
+  gen_tri_uvw_and_dir:
+    shader_file_path: /build_geometry/gen_tri_uvw_and_dir.cs_6_8.spv
     push_constant_size: 0
     bindings:
       - uniform_buffer
       - storage_buffer
-      - storage_buffer
-      - storage_buffer
-  cal_tri_dir:
-    shader_file_path: /build_geometry/cal_tri_dir.cs_6_8.spv
-    push_constant_size: 0
-    bindings:
-      - uniform_buffer
       - storage_buffer
       - storage_buffer
       - storage_buffer

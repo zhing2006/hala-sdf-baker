@@ -111,9 +111,9 @@ impl SDFBaker {
     program.dispatch(
       0,
       command_buffers,
-      (dimensions[0] as f32 / 8.0).ceil() as u32,
-      (dimensions[1] as f32 / 8.0).ceil() as u32,
-      (dimensions[2] as f32 / 8.0).ceil() as u32,
+      (dimensions[0] + 8 - 1) / 8,
+      (dimensions[1] + 8 - 1) / 8,
+      (dimensions[2] + 8 - 1) / 8,
     );
 
     Ok(())
