@@ -19,7 +19,7 @@ FragmentOutput main(ToFragment input) {
 
   // Write the uvw(0 - 1) in the cube to the voxel buffer.
   // Also increment the counter buffer.
-  float3 voxel_uvw = ((float3(voxel_coord) + float3(0.5f, 0.5f, 0.5f)) / max(_dimensions[0], max(_dimensions[1], _dimensions[2])));
+  float3 voxel_uvw = (float3(voxel_coord) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
   _voxels_buffer_rw[id3(voxel_coord)] = float4(voxel_uvw, 1.0f);
   InterlockedAdd(_counter_buffer_rw[id3(voxel_coord)], 1u);
 #ifdef USE_CONSERVATIVE_RASTERIZATION
