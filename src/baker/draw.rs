@@ -109,7 +109,7 @@ impl SDFBaker {
     // Draw scene.
     if self.settings.show_wireframe {
       self.draw_scene(index, command_buffers, -1, 0xFFFFFFFF, None)?;
-      // if let Some(vertex_buffer) = self.baker_resources.vertices_buffer.as_ref() {
+      // if let Some(vertex_buffer) = self.sdf_baker_resources.vertices_buffer.as_ref() {
       //   self.debug_draw_vertices_buffer(index, command_buffers, self.settings.selected_mesh_index, 0xFF0000FF, Some(vertex_buffer))?;
       // }
     }

@@ -434,4 +434,224 @@ _distance_texture_rw[int3(id.x, id.y, id.z)] = cloest_voxel_distance + distance_
 
 ## SDF烘焙
 
+相比UDF来说，SDF的烘焙则要复杂得多。这里的实现参考自Unity的中[Visual Effect Graph](https://docs.unity3d.com/Packages/com.unity.visualeffectgraph@14.0/manual/sdf-in-vfx-graph.html)的方案。
+
+### 第一步：初始化
+
+增加烘焙配置项：
+```rust
+pub sign_passes_count: i32, // 符号Pass（寻找符号是正还是负）的迭代次数。
+pub in_out_threshold: f32,  // 判断是在Mesh内还是外的阈值。
+```
+
+接下来准备全局的UBO，用于存储整个烘焙过程中都需要用到的一些参数，具体如下代码中的注释。
+```rust
+pub struct GlobalUniform {
+  pub dimensions: [u32; 3],   // 根据需要烘焙Mesh的BoundingBox信息和烘焙体素最大分辨率计算出三个维度的大小。
+  pub upper_bound_count: u32, // 存放每个体素中包含三角形的Buffer的上界。
+  pub num_of_triangles: u32,  // 待烘焙Mesh的总三角形数量。
+  pub max_size: f32,          // 根据整个烘焙区域最长边的长度。
+  pub max_dimension: u32,     // 整个体素空间最长边的体素数量。
+  pub center: [f32; 3],       // 烘焙区域BoundingBox的中心坐标。
+  pub extents: [f32; 3],      // 烘焙区域BoundingBox的半长。
+}
+```
+其它值的计算都同UDF，关于upper_bound_count，由于无法确定每个体素到底包含多少三角形，所以这里只能估算一个最大值。
+```rust
+// 首先假设有一半的体素中有三角形。
+let num_of_voxels_has_triangles = dimensions[0] as f64 * dimensions[1] as f64 * dimensions[2] as f64 / 2.0f64;
+// 假设一个三角形会被相邻的8个体素共享。假设每个体素会拥有总三角形数的平方根数量的三角形。
+// 这里对以上两个假设取最大值。
+let avg_triangles_per_voxel = (num_of_triangles as f64 / num_of_voxels_has_triangles * 8.0f64).max((num_of_triangles as f64).sqrt());
+// 总计需要存储的三角形数。
+let upper_bound_count64 = (num_of_voxels_has_triangles * avg_triangles_per_voxel) as u64;
+// 限制最大值为1536 * 2^18。
+let upper_bound_count = (1536 * (1 << 18)).min(upper_bound_count64) as u32;
+// 限制最小值为1024。
+let upper_bound_count = upper_bound_count.max(1024);
+```
+*注意：这里只是一个保守推测，实际需要的数量可能远远小于此值。进行保守推测只是为了覆盖更多的边界情况。*
+
+在整个SDF的烘焙过程中需要大量的临时Buffer，这里就先不做介绍，后续在每一步中再详细介绍。
+
+### 第二步：构建几何体
+
+首先，如同UDF一样从Mesh的Vertex Buffer和Index Buffer中读取三角形信息，并变换到归一化的UVW空间，保存到Triangle UVW Buffer中。
+```hlsl
+Triangle tri_uvw;
+tri_uvw.a = (get_vertex_pos(id.x, 0) - _center + _extents) / _max_size;
+tri_uvw.b = (get_vertex_pos(id.x, 1) - _center + _extents) / _max_size;
+tri_uvw.c = (get_vertex_pos(id.x, 2) - _center + _extents) / _max_size;
+
+_triangles_uvw_rw[id.x] = tri_uvw;
+```
+
+接下来，计算每个三角形的“方向”。这里的“方向”表示三角形大体朝向哪个轴，既和XY、ZX、YZ哪个平面更接近。结果保存到Coord Flip Buffer中。
+```hlsl
+const float3 a = get_vertex_pos(id.x, 0);
+const float3 b = get_vertex_pos(id.x, 1);
+const float3 c = get_vertex_pos(id.x, 2);
+const float3 edge0 = b - a;
+const float3 edge1 = c - b;
+const float3 n = abs(cross(edge0, edge1));
+if (n.x > max(n.y, n.z) + 1e-6f) {  // Plus epsilon to make comparison more stable.
+  // Triangle nearly parallel to YZ plane
+  _coord_flip_buffer_rw[id.x] = 2;
+} else if (n.y > max(n.x, n.z) + 1e-6f) {
+  // Triangle nearly parallel to ZX plane
+  _coord_flip_buffer_rw[id.x] = 1;
+} else {
+  // Triangle nearly parallel to XY plane
+  _coord_flip_buffer_rw[id.x] = 0;
+}
+```
+这里为什么是ZX平面而不是XZ平面，是因为后续分别需要在3个方向进行计算，ZX平面表示在Y轴方向计算时，局部的X轴实际是Z，局部的Y轴实际是X。
+
+既然已经为每个三角形分配好了方向，接下来就是在每个方向上对三角形进行保守光栅化。
+在此之前先计算三个方向上的正交和投影矩阵。
+```rust
+// 根据视点位置，旋转轴向，宽度，高度，近平面距离和远平面距离构造View矩阵和Proj矩阵。
+let calculate_world_to_clip_matrix = |eye, rot, width: f32, height: f32, near: f32, far: f32| {
+  let proj = glam::Mat4::orthographic_rh(-width / 2.0, width / 2.0, -height / 2.0, height / 2.0, near, far);
+  let view = glam::Mat4::from_scale_rotation_translation(glam::Vec3::ONE, rot, eye).inverse();
+  proj * view
+};
+```
+
+Z方向的XY平面如下图所示，局部X轴为世界的X轴，局部Y轴为世界的Y轴。
+
+![Image XY Plane](images/xy_plane.png)
+
+```rust
+let xy_plane_mtx = {
+  // 视点在正Z方向加1的位置向下看。
+  let pos = glam::Vec3::from_array(bounds.center) + glam::Vec3::new(0.0, 0.0, bounds.extents[2] + 1.0);
+  // View空间默认向下看，不需要旋转。
+  let rot = glam::Quat::from_euler(glam::EulerRot::XYZ, 0.0, 0.0, 0.0);
+  // 近平面在1，这就是视点位置为什么加1，给近平面留出空间。
+  let near = 1.0f32;
+  // 远平面等于从近平面开始延申出整个包围盒的Z方向长度。
+  let far = near + bounds.extents[2] * 2.0;
+  calculate_world_to_clip_matrix(pos, rot, bounds.extents[0] * 2.0, bounds.extents[1] * 2.0, near, far)
+};
+```
+
+Y方向的ZX平面如下图所示，局部X轴为世界的Z轴，局部Y轴为世界的X轴。
+
+![Image ZX Plane](images/zx_plane.png)
+
+```rust
+let zx_plane_mtx = {
+  // 视点在正Y方向加1的位置向外看（从Y轴的正向向负向看）。
+  let pos = glam::Vec3::from_array(bounds.center) + glam::Vec3::new(0.0, bounds.extents[1] + 1.0, 0.0);
+  // 首先沿Y轴旋转-90度，再沿X轴旋转-90度。让局部X轴对齐世界Z轴，局部Y轴对齐世界X轴。
+  let rot = glam::Quat::from_euler(glam::EulerRot::YXZ, -std::f32::consts::FRAC_PI_2, -std::f32::consts::FRAC_PI_2, 0.0);
+  let near = 1.0f32;
+  let far = near + bounds.extents[1] * 2.0;
+  calculate_world_to_clip_matrix(pos, rot, bounds.extents[2] * 2.0, bounds.extents[0] * 2.0, near, far)
+};
+```
+
+X方向的YZ平面如下图所示，局部X轴为世界的Y轴，局部Y轴为世界的Z轴。
+
+![Image YZ Plane](images/yz_plane.png)
+
+```rust
+let yz_plane_mtx = {
+  // 视点再正X方向加1的位置向左看。
+  let pos = glam::Vec3::from_array(bounds.center) + glam::Vec3::new(bounds.extents[0] + 1.0, 0.0, 0.0);
+  // 首先沿X轴旋转90度，再沿Y轴旋转90度。让局部X轴对齐世界Y轴，局部Y轴对齐世界Z轴。
+  let rot = glam::Quat::from_euler(glam::EulerRot::XYZ, std::f32::consts::FRAC_PI_2, std::f32::consts::FRAC_PI_2, 0.0);
+  let near = 1.0f32;
+  let far = near + bounds.extents[0] * 2.0;
+  calculate_world_to_clip_matrix(pos, rot, bounds.extents[1] * 2.0, bounds.extents[2] * 2.0, near, far)
+};
+```
+
+接下来就是在以上三个方向上，对对应方向的三角形进行保守光栅化处理。
+首先计算三角形覆盖范围的二维AABB保存到float4中，xy保存min，zw保存max。
+```hlsl
+// 获取三角形的三个顶点，并变换到clip空间。
+[unroll(3)]
+for (i = 0; i < 3; i++) {
+  vertex_in_clip[i] = mul(_world_to_clip[current_axis], float4(get_vertex_pos(id.x, i), 1.0));
+}
+
+// 计算AABB的大小。
+float4 aabb = float4(1.0, 1.0, -1.0, -1.0);
+aabb.xy = min(aabb.xy, min(vertex_in_clip[0].xy, min(vertex_in_clip[1].xy, vertex_in_clip[2].xy)));
+aabb.zw = max(aabb.xy, max(vertex_in_clip[0].xy, max(vertex_in_clip[1].xy, vertex_in_clip[2].xy)));
+float2 conservative_pixel_size;
+// 根据当前光栅化的方向，根据设置的Conservative Offset参数计算实际需要的Offset像素大小。
+if (current_axis == 0) {
+  conservative_pixel_size = float2(_conservative_offset / _dimensions.x, _conservative_offset / _dimensions.y);
+} else if (current_axis == 1) {
+  conservative_pixel_size = float2(_conservative_offset / _dimensions.z, _conservative_offset / _dimensions.x);
+} else {
+  conservative_pixel_size = float2(_conservative_offset / _dimensions.y, _conservative_offset / _dimensions.z);
+}
+
+// 对AABB大小进行扩大。
+_aabb_buffer_rw[id.x] = aabb + float4(-conservative_pixel_size.x, -conservative_pixel_size.y, conservative_pixel_size.x, conservative_pixel_size.y);
+```
+
+然后对三角形进行光栅化，并扩大设置的Offset。这里之所以保守光栅化扩大，是防止float计算时的误差导致漏“缝隙”。
+```hlsl
+// 构建三角形所在平面存入float4，xyz为平面法线方向，w为平面距离原点的距离。
+const float3 normal = normalize(cross(vertex_in_clip[1].xyz - vertex_in_clip[0].xyz, vertex_in_clip[2].xyz - vertex_in_clip[0].xyz));
+const float4 triangle_plane = float4(normal, -dot(vertex_in_clip[0].xyz, normal));
+
+// 计算法线方向是向Z正方向（1）还是负方向（-1）。
+const float direction = sign(dot(normal, float3(0, 0, 1)));
+float3 edge_plane[3];
+[unroll(3)]
+for (i = 0; i < 3; i++) {
+  // 计算2D边平面。W是齐次坐标。
+  edge_plane[i] = cross(vertex_in_clip[i].xyw, vertex_in_clip[(i + 2) % 3].xyw);
+  // 根据之前确定的方向和偏移像素值将边平面向“外”推动一段距离。
+  // 这里不好理解后面可以看图。
+  edge_plane[i].z -= direction * dot(conservative_pixel_size, abs(edge_plane[i].xy));
+}
+
+float4 conservative_vertex[3];
+bool is_degenerate = false;
+[unroll(3)]
+for (i = 0; i < 3; i++) {
+  _vertices_buffer_rw[3 * id.x + i] = float4(0, 0, 0, 1);
+
+  // 根据三条边的边平面，进行相交得到新的顶点位置。
+  conservative_vertex[i].xyw = cross(edge_plane[i], edge_plane[(i + 1) % 3]);
+
+  // 根据W值判断三角形是否退化。
+  if (abs(conservative_vertex[i].w) < CONSERVATIVE_RASTER_EPS) {
+    is_degenerate |= true;
+  } else {
+    is_degenerate |= false;
+    conservative_vertex[i] /= conservative_vertex[i].w; // after this, w is 1.
+  }
+}
+if (is_degenerate)
+  return;
+
+// 通过三角形上的点，满足平面公式计算三个顶点的Z值。
+// 平面公式：ax + by + cz + d = 0。
+// 计算Z：z = -(ax + by + d) / c。
+// 最后将新得到的三个顶点写入Vertices Buffer。
+[unroll(3)]
+for (i = 0; i < 3; i++) {
+  conservative_vertex[i].z = -(triangle_plane.x * conservative_vertex[i].x + triangle_plane.y * conservative_vertex[i].y + triangle_plane.w) / triangle_plane.z;
+  _vertices_buffer_rw[3 * id.x + i] = conservative_vertex[i];
+}
+```
+在计算机图形学中，一个平面可以用一个四维向量来表示：float4(plane) = (a, b, c, d)，其中平面的方程为 ax + by + cz + d = 0。一个“边平面”的概念是基于这样一个想法：当处理2D投影上的几何体（比如三角形），可以用分割空间的平面来代表三角形的边界。
+
+    edge_plane[i] = cross(vertex_in_clip[i].xyw, vertex_in_clip[(i + 2) % 3].xyw);
+
+在这段代码中，具体构建边平面的方法是通过两个顶点的齐次坐标的叉积来获得。这里，vertex_in_clip 是顶点的齐次坐标。vertex_in_clip[i].xyw 提取的是顶点的 x, y, w 分量，将其视为 3 维向量。cross 函数计算两个3维向量的叉积，生成一个垂直于这两个向量所在平面的向量。这个生成的向量 edge_plane[i] 就代表了从 vertex_in_clip[i] 到 vertex_in_clip[(i + 2) % 3] 的边界平面（注意是2D平面在齐次坐标下的表示）。
+
+这里将保守光栅化后的三角形还原到模型空间，红色线框为放大后的三角形，白色线框为原始三角形。可以看到每个三角形都沿其所在平面扩大了一圈。
+
+![Image Conservative Offset](images/conservative_offset.png)
+
+
 To be continue...
