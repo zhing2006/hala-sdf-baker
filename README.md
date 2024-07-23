@@ -653,5 +653,151 @@ for (i = 0; i < 3; i++) {
 
 ![Image Conservative Offset](images/conservative_offset.png)
 
+### 第三步：三角形覆盖体素计数统计
+
+接下来暂时离开一下Compute Shader，我们要利用Vertex Shader和Fragment Shader统计一下三个方向上的三角形覆盖次数。
+先来看一下Vertex Shader。
+```hlsl
+struct VertexInput {
+  // 通过Draw(num_of_triangles * 3)，传递进Vertex Id。
+  uint vertex_id: SV_VertexID;
+};
+
+ToFragment main(VertexInput input) {
+  ToFragment output = (ToFragment)0;
+
+  // 根据Vertex Id去上一步光栅化结果的Vertices Buffer中直接读取Clip空间中的顶点数据。
+  const float4 pos = _vertices_buffer[input.vertex_id];
+  // Vertex Id简单的除以3得到三角形ID。
+  output.triangle_id = input.vertex_id / 3;
+  // 如果当前三角形与当前绘制方向不同，则传递(-1, -1, -1, -1)使得Fragment Shader被跳过。
+  if (_coord_flip_buffer[output.triangle_id] != g_push_constants.current_axis) {
+    output.position = float4(-1, -1, -1, -1);
+  } else {
+    output.position = pos;
+  }
+
+  return output;
+}
+```
+
+先总体看一下Fragment Shader的流程。
+```hlsl
+struct ToFragment {
+  float4 position: SV_Position;
+  uint triangle_id: TEXCOORD0;
+};
+
+FragmentOutput main(ToFragment input) {
+  FragmentOutput output = (FragmentOutput)0;
+
+  // 根据Vertex Shader传过来的position和三角形ID计算当前处理像素的体素坐标voxel_coord。
+  // 同时判断是否可以同时处理在深度方向上向里backword和向外forward进行扩展处理。
+  int3 depth_step, voxel_coord;
+  bool can_step_backward, can_step_forward;
+  get_voxel_coordinates(input.position, input.triangle_id, voxel_coord, depth_step, can_step_backward, can_step_forward);
+
+  // 将体素中心坐标转换到归一化的UVW空间。并存储到Voxels Buffer中。
+  float3 voxel_uvw = (float3(voxel_coord) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
+  _voxels_buffer_rw[id3(voxel_coord)] = float4(voxel_uvw, 1.0f);
+  // 在当前体素坐标的Counter Buffer进行累加，标记此体素被三角形覆盖一次。
+  InterlockedAdd(_counter_buffer_rw[id3(voxel_coord)], 1u);
+  // 如果能向外扩展，对向外的一个体素进行同样操作。
+  if (can_step_forward) {
+    _voxels_buffer_rw[id3(voxel_coord + depth_step)] = float4(voxel_uvw, 1.0f);
+    InterlockedAdd(_counter_buffer_rw[id3(voxel_coord + depth_step)], 1u);
+  }
+  // 如果能向内扩展，对向内的一个体素进行同样操作。
+  if (can_step_backward) {
+    _voxels_buffer_rw[id3(voxel_coord - depth_step)] = float4(voxel_uvw, 1.0f);
+    InterlockedAdd(_counter_buffer_rw[id3(voxel_coord - depth_step)], 1u);
+  }
+
+  // 这里RT的输出并不参与到烘焙过程中，仅仅作为调试使用。
+  output.color = float4(voxel_uvw, 1);
+  return output;
+}
+```
+总体流程大概就是利用VS和FS，在三角形覆盖区域对Counter Buffer进行累加操作。
+现在来详细看一下`get_voxel_coordinates`的实现。
+```hlsl
+void get_voxel_coordinates(
+  float4 screen_position,
+  uint triangle_id,
+  out int3 voxel_coord,
+  out int3 depth_step,
+  out bool can_step_backward,
+  out bool can_step_forward
+) {
+  // 获取当前屏幕分辨率，既当前方向上的体素宽和高。
+  // 比如当前体素空间如果是[2, 3, 4]，那么在进行Z方向XY平面进行处理时返回2 x 3。
+  const float2 screen_params = get_custom_screen_params();
+  // 将Vertex Shader传递过来的Position转换到UVW空间。
+  screen_to_uvw(screen_position, screen_params);
+  // 根据三角形ID获取之前计算得到的三角形覆盖区域的AABB，判断如果不在AABB范围内将会Discard掉当前Fragment Shader的后续执行。
+  cull_with_aabb(screen_position, triangle_id);
+  // 计算体素坐标和决定是否可以向前和向后扩展。
+  compute_coord_and_depth_step(
+    screen_params,
+    screen_position,
+    voxel_coord,
+    depth_step,
+    can_step_backward,
+    can_step_forward
+  );
+}
+```
+再来详细看一下`compute_coord_and_depth_step`的实现。
+```hlsl
+void compute_coord_and_depth_step(
+  float2 screen_params,
+  float4 screen_position,
+  out int3 voxel_coord,
+  out int3 depth_step,
+  out bool can_step_backward,
+  out bool can_step_forward
+) {
+  // 这里我们保守的认为三角形会被相邻的前后体素共享，这样可以避免后续一些显示上的问题。
+  can_step_forward = true;
+  can_step_backward = true;
+
+  if (g_push_constants.current_axis == 1) {
+    // 通过UVW空间中的Position计算体素坐标。
+    voxel_coord = (screen_position.xyz * float3(screen_params, _dimensions[1]));
+    voxel_coord.xyz = voxel_coord.yzx;
+
+    // 判断是否是边界，不是的话则可以向内和向外扩展。
+    depth_step = int3(0, 1, 0);
+    if (voxel_coord.y <= 0) {
+      can_step_backward = false;
+    }
+    if (voxel_coord.y >= _dimensions[1] - 1) {
+      can_step_forward = false;
+    }
+  } else if (g_push_constants.current_axis == 2) {
+    // 基本同上，只是具体轴的方向不同。
+  } else {
+    // 基本同上，只是具体轴的方向不同。
+  }
+}
+```
+由于深度写入和深度测试被关闭，至此在三个方向上，三角形覆盖的体素都通过InterlockedAdd对Counter Buffer进行了计数。
+同时这些被覆盖体素的UVW坐标也存入到了Voxels Buffer中。
+
+接下来是利用Prefix Sum算法对Counter Buffer进行累加，最终结果存入Accum Counter Buffer中。其基本思想是通过预处理步骤，将数组中的每个位置之前所有元素之和存储起来，从而使得后续的查询操作可以在常数时间内完成。
+由于Prefix Sum算法和烘焙本身并无直接关系，这只给出相关算法的介绍连接：
+* [维基百科](https://en.wikipedia.org/wiki/Prefix_sum)，
+* [GPU Gems 3 - Chapter 39. Parallel Prefix Sum (Scan) with CUDA](https://developer.nvidia.com/gpugems/gpugems3/part-vi-gpu-computing/chapter-39-parallel-prefix-sum-scan-cuda)
+
+此时Accum Counter Buffer中已经保存当前体素之前的所有体素包含（被覆盖）的三角形数。
+举个例子，体素0，1，2，3，4。分别被4，2，5，0，3个三角形覆盖。那么此时计数Buffer中的值为：
+
+    0（当前体素之前没有其它体素）
+    4（当前体素之前是0号，0号有4个三角形）
+    6（当前体素之前是0号和1号，0号有4个三角形，1号有2个三角形，总和6个）
+    11（算法同上）
+    11（算法同上）
+
+接下来就是把这些三角形存入Triangle Id Buffer，并可以通过Accum Counter Buffer遍历每个体素所包含的三角形列表。
 
 To be continue...
