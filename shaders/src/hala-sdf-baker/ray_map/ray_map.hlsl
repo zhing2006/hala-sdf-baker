@@ -55,7 +55,7 @@ float intersect_segment_triangle(float3 segment_start, float3 segment_end, Trian
   }
 }
 
-void test_intersection_6_rays(
+void test_intersection_3_rays(
   in Triangle tri,              // Input triangle used for the intersection test.
   in int3 voxel_id,             // The voxel coordinates from where rays are shot.
   out float3 intersect_forward, // Outputs the number of intersections in forward directions for x, y, z axes.
