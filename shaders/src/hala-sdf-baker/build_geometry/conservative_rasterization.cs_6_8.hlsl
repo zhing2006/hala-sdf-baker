@@ -44,11 +44,6 @@ void main(uint3 id: SV_DispatchThreadID) {
   for (i = 0; i < 3; i++) {
     vertex_in_clip[i] = mul(_world_to_clip[current_axis], float4(get_vertex_pos(id.x, i), 1.0));
   }
-  const float3 normal = normalize(cross(vertex_in_clip[1].xyz - vertex_in_clip[0].xyz, vertex_in_clip[2].xyz - vertex_in_clip[0].xyz));
-  const float direction = sign(dot(normal, float3(0, 0, 1)));
-
-  // Plane's xyz is the normal of the triangle, w is the distance from the origin.
-  const float4 triangle_plane = float4(normal, -dot(vertex_in_clip[0].xyz, normal));
 
   // Calculate the AABB of the triangle in clip space.
   float4 aabb = float4(1.0, 1.0, -1.0, -1.0);
@@ -66,7 +61,12 @@ void main(uint3 id: SV_DispatchThreadID) {
   // Add offset of some pixel size to AABB.
   _aabb_buffer_rw[id.x] = aabb + float4(-conservative_pixel_size.x, -conservative_pixel_size.y, conservative_pixel_size.x, conservative_pixel_size.y);
 
+  // Plane's xyz is the normal of the triangle, w is the distance from the origin.
+  const float3 normal = normalize(cross(vertex_in_clip[1].xyz - vertex_in_clip[0].xyz, vertex_in_clip[2].xyz - vertex_in_clip[0].xyz));
+  const float4 triangle_plane = float4(normal, -dot(vertex_in_clip[0].xyz, normal));
+
   // Conservative rasterization.
+  const float direction = sign(dot(normal, float3(0, 0, 1)));
   float3 edge_plane[3];
   [unroll(3)]
   for (i = 0; i < 3; i++) {
