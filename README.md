@@ -798,6 +798,123 @@ void compute_coord_and_depth_step(
     11（算法同上）
     11（算法同上）
 
-接下来就是把这些三角形存入Triangle Id Buffer，并可以通过Accum Counter Buffer遍历每个体素所包含的三角形列表。
+接下来就是把这些三角形存入Triangle Id Buffer，并可以通过Accum Counter Buffer遍历每个体素所包含的三角形列表。这里同样使用Vertex Shader和Fragment Shader。
+
+Vertex Shader和之前一样，这里就不再重复了。只看一下Fragment的不同点。
+```hlsl
+// 此处通过计算出的体素坐标对Counter Buffer加1后返回原值用于写入Triangle Ids Buffer的索引。
+uint index = 0u;
+InterlockedAdd(_counter_buffer_rw[id3(voxel_coord)], 1u, index);
+// 这里为了防止越界，用到了一开始计算的每体素三角形Buffer的上限。
+if (index < _upper_bound_count)
+_triangle_ids_buffer_rw[index] = input.triangle_id;
+// 同样对向外和向内的体素做扩展。
+if (can_step_forward) {
+  InterlockedAdd(_counter_buffer_rw[id3(voxel_coord + depth_step)], 1u, index);
+  if (index < _upper_bound_count)
+  _triangle_ids_buffer_rw[index] = input.triangle_id;
+}
+if (can_step_backward) {
+  InterlockedAdd(_counter_buffer_rw[id3(voxel_coord - depth_step)], 1u, index);
+  if (index < _upper_bound_count)
+  _triangle_ids_buffer_rw[index] = input.triangle_id;
+}
+```
+这里很好理解，体素i之前的体素一共有多少个三角形覆盖已经存入了Counter Buffer，那么`_counter_buffer_rw[id3(voxel_coord)]`取到的就是当前体素i可以写入三角形索引的开始位置。
+
+### 第四步：计算Ray Map
+
+完成以上所有计算后，后续都可以通过如下代码遍历指定体素的三角形列表了。
+```hlsl
+uint start_triangle_id = 0;
+[branch]
+if (id3(id) > 0) {
+  start_triangle_id = _accum_counter_buffer[id3(id) - 1];
+}
+uint end_triangle_id = _accum_counter_buffer[id3(id)];
+
+for (uint i = start_triangle_id; i < end_triangle_id && (i < _upper_bound_count - 1); i++) {
+  const uint triangle_index = _triangles_in_voxels[i];
+  const Triangle tri = _triangles_uvw[triangle_index];
+  ...
+}
+```
+
+在开始计算Ray Map之前先引入几个辅助函数。
+```hlsl
+// 计算线段与三角形的交点，不相交返回0，与三角形边缘相交返回0.5或-0.5，与三角形内部相交返回1.0或-1.0。
+// 符号表示是与三角形正面还是反面相交。t返回交点参数。
+float intersect_segment_triangle(float3 segment_start, float3 segment_end, Triangle tri, out float t_value) {
+  /*
+   * 三角形平面方程：n * (P - A) = 0
+   * 线段方程：P(t) = Q + t(S - Q)
+   * n dot ((Q + t(S - Q)) - A) = 0
+   * n dot (Q - A + t(S - Q)) = 0
+   * n dot (Q - A) + t(n dot (S - Q)) = 0
+   * 𝑣 = 𝑄 - 𝐴, 𝑑 = 𝑆 − 𝑄
+   * t = - (n dot 𝑣) / (n dot d)
+   *
+   * 其中：
+   * n - 三角形平面的法向量
+   * P - 三角形平面上的任意点
+   * A - 三角形的一个顶点
+   * Q, S - 线段的两个端点
+   * t - 交点参数，用于描述线段与三角形的交点
+   * 𝑣 - 向量 Q - A
+   * 𝑑 - 向量 S - Q
+   */
+
+  // 计算三角形的两条边。
+  const float3 edge1 = tri.b - tri.a;
+  const float3 edge2 = tri.c - tri.a;
+  // 这里实际计算的是 -d = Q - S。
+  const float3 end_to_start = segment_start - segment_end;
+
+  // 通过叉乘计算出三角形的法线矢量。
+  const float3 normal = cross(edge1, edge2);
+  // 计算线段与发现的点乘。
+  const float dot_product = dot(end_to_start, normal);
+  // 此点乘结果的符号代表着是线段与三角形正面还是反面相交。
+  const float side = sign(dot_product);
+  // 取倒数。
+  const float inverse_dot_product = 1.0f / dot_product;
+
+  // v = Q - A
+  const float3 vertex0_to_start = segment_start - tri.a;
+  // 根据公式，计算出交点的t值。
+  // t = - (n dot v) / (n dot d)
+  //   = (n dot v) / (n dot -d)
+  float t = dot(vertex0_to_start, normal) * inverse_dot_product;
+
+  // 如果t值小于0或者大于1则意味着线段和三角形平面没有交点。
+  if (t < -INTERSECT_EPS || t > 1 + INTERSECT_EPS) {
+    t_value = 1e10f;
+    return 0;
+  } else {
+    // 计算质心坐标检测交点是否在三角形内部。
+    const float3 cross_product = cross(end_to_start, vertex0_to_start);
+    const float u = dot(edge2, cross_product) * inverse_dot_product;
+    const float v = -dot(edge1, cross_product) * inverse_dot_product;
+    float edge_coefficient = 1.0f;
+
+    // 如果质心坐标不在指定的范围，则交点在三角形外部。
+    if (u < -BARY_EPS || u > 1 + BARY_EPS || v < -BARY_EPS || u + v > 1 + BARY_EPS) {
+      t_value = 1e10f;
+      return 0;
+    } else {
+      const float w = 1.0f - u - v;
+      // 如果质心坐标在三角形边界上，则调整系数为0.5。
+      if (abs(u) < BARY_EPS || abs(v) < BARY_EPS || abs(w) < BARY_EPS) {
+        edge_coefficient = 0.5f;
+      }
+
+      // 返回t值和求交结果。
+      t_value = t;
+      return side * edge_coefficient;
+    }
+  }
+}
+```
+
 
 To be continue...
