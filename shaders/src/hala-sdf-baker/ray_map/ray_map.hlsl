@@ -31,7 +31,7 @@ float intersect_segment_triangle(float3 segment_start, float3 segment_end, Trian
   const float3 vertex0_to_start = segment_start - tri.a; // Q - A = v
   float t = dot(vertex0_to_start, normal) * inverse_dot_product; // t = - (n dot v) / (n dot d) = (n dot v) / (n dot -d)
   if (t < -INTERSECT_EPS || t > 1 + INTERSECT_EPS) {
-    t_value = 1e10;
+    t_value = 1e10f;
     return 0; // The intersection is outside the segment.
   } else {
     // Calculate barycentric coordinates and check if they are within bounds.
@@ -41,7 +41,7 @@ float intersect_segment_triangle(float3 segment_start, float3 segment_end, Trian
     float edge_coefficient = 1.0f;
 
     if (u < -BARY_EPS || u > 1 + BARY_EPS || v < -BARY_EPS || u + v > 1 + BARY_EPS) {
-      t_value = 1e10;
+      t_value = 1e10f;
       return 0; // The intersection is outside the triangle.
     } else {
       const float w = 1.0f - u - v;
