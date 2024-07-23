@@ -423,5 +423,15 @@ _distance_texture_rw[int3(id.x, id.y, id.z)] = cloest_voxel_distance + distance_
 
 至此Distance Texture已经保存了计算完成UDF数据。可以进行可视化了。
 
+![Image UDF](images/udf.png)
+
+从图中可以看到越接近Mesh表面的地方颜色越深（数值小距离近），越远离的地方越亮（数值大距离远）。
+
+也可以通过等值面重建Mesh。
+
+![Image UDF Mesh](images/udf_mesh.png)
+
+
+## SDF烘焙
 
 To be continue...
