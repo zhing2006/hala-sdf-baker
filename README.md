@@ -1088,5 +1088,24 @@ if (g_push_constants.need_normalize) {
 
 ### 第六步：封闭表面
 
+首先先找出内外的边界，即Sign Map中正负值相邻的地方。
+```hlsl
+// 根据设置的阈值计算得分。
+const float self_sign_score = _sign_map[id.xyz] - g_push_constants.threshold;
+// 如果得分小于阈值的10%。
+if (abs(self_sign_score / g_push_constants.threshold) < 0.1f) {
+  // 如果当前体素的得分和右侧体素的得分相反，意味着找到边界。
+  if (self_sign_score * (_sign_map[id.xyz + uint3(1, 0, 0)] - g_push_constants.threshold) < 0) {
+    // 根据当前体素的得分确定是写入自身还是右侧体素。
+    const uint3 write_coord = id.xyz + (self_sign_score < 0 ? uint3(1, 0, 0) : uint3(0, 0, 0));
+    // 写入内容为体素坐标归一化到UVW空间中的值。
+    _voxels_texture_rw[write_coord.xyz] = float4((float3(write_coord) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension, 1.0f);
+  }
+  // 同样处理Y轴。
+  ...
+  // 同样处理Z轴。
+  ...
+}
+```
 
 To be continue...
