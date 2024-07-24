@@ -5,7 +5,7 @@ struct PushConstants {
 [[vk::push_constant]]
 PushConstants g_push_constants;
 
-float intersect_segment_triangle(float3 segment_start, float3 segment_end, Triangle tri, out float t_value) {
+float intersect_segment_to_triangle_with_face_check(float3 segment_start, float3 segment_end, Triangle tri, out float t_value) {
   /*
    * Triangle plane equation: n * (P - A) = 0
    * Segment equation: P(t) = Q + t(S - Q)
@@ -55,7 +55,7 @@ float intersect_segment_triangle(float3 segment_start, float3 segment_end, Trian
   }
 }
 
-void test_intersection_3_rays(
+void calculate_triangle_intersection_with_3_rays(
   in Triangle tri,              // Input triangle used for the intersection test.
   in int3 voxel_id,             // The voxel coordinates from where rays are shot.
   out float3 intersect_forward, // Outputs the number of intersections in forward directions for x, y, z axes.
@@ -77,7 +77,7 @@ void test_intersection_3_rays(
   q = (float3(voxel_id) + float3(1.0f, 0.5f, 0.5f)) / _max_dimension;
   // The line is from -x to +x, so the triangle is facing left.
   // Negative intersection means the triangle is facing -x direction.
-  intersect = -intersect_segment_triangle(p, q, tri, t);
+  intersect = -intersect_segment_to_triangle_with_face_check(p, q, tri, t);
   if (t < 0.5f) {
     // If the intersection is on the left side, it is backward.
     intersect_backward.x += float(intersect);
@@ -89,7 +89,7 @@ void test_intersection_3_rays(
   // Test y-direction rays.
   p = (float3(voxel_id) + float3(0.5f, 0.0f, 0.5f)) / _max_dimension;
   q = (float3(voxel_id) + float3(0.5f, 1.0f, 0.5f)) / _max_dimension;
-  intersect = -intersect_segment_triangle(p, q, tri, t);
+  intersect = -intersect_segment_to_triangle_with_face_check(p, q, tri, t);
   if (t < 0.5f) {
     intersect_backward.y += float(intersect);
   } else {
@@ -99,7 +99,7 @@ void test_intersection_3_rays(
   // Test z-direction rays.
   p = (float3(voxel_id) + float3(0.5f, 0.5f, 0.0f)) / _max_dimension;
   q = (float3(voxel_id) + float3(0.5f, 0.5f, 1.0f)) / _max_dimension;
-  intersect = -intersect_segment_triangle(p, q, tri, t);
+  intersect = -intersect_segment_to_triangle_with_face_check(p, q, tri, t);
   if (t < 0.5f) {
     intersect_backward.z += float(intersect);
   } else {

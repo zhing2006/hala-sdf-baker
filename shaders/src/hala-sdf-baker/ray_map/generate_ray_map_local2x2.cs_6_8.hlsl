@@ -30,7 +30,7 @@ void main(uint3 id: SV_DispatchThreadID) {
     const uint triangle_index = _triangles_in_voxels[i];
     const Triangle tri = _triangles_uvw[triangle_index];
     float3 intersect_forward, intersect_backward;
-    test_intersection_3_rays(tri, int3(id.xyz), intersect_forward, intersect_backward);
+    calculate_triangle_intersection_with_3_rays(tri, int3(id.xyz), intersect_forward, intersect_backward);
 
     // Save the forward intersection count(-axis is negative, +axis is positive) to the current voxel.
     _ray_map_rw[id.xyz] += float4(intersect_forward, 1.0f);
