@@ -998,5 +998,95 @@ for (int t = _dimensions.x - 2; t >= 0; t--) {
 
 ### 第五步：计算符号
 
+一开始先初始化Sign Map。
+```hlsl
+const float4 self_ray_map = _ray_map[id.xyz];
+// 当前体素对应的Ray Map中存储了从右到左从后到前从上到下，到当前体素的正相交与反相交的差值。
+const float right_side_intersection = self_ray_map.x;
+const float back_side_intersection = self_ray_map.y;
+const float top_side_intersection = self_ray_map.z;
+// 每个方向上第一个平面内的体素，存储了从右到左从后到前从上到下贯穿整个体素的正相交与反相交的差值。
+// 减去当前体素的值，就等于还剩下的其左面前面下面正相交与反相交的差值。
+const float left_side_intersection = _ray_map[int3(0, id.y, id.z)].x - self_ray_map.x;
+const float front_side_intersection = _ray_map[int3(id.x, 0, id.z)].y - self_ray_map.y;
+const float bottom_side_intersection = _ray_map[int3(id.x, id.y, 0)].z - self_ray_map.z;
+// 把他们全部加起来可以大致表示当前体素上是正相交多还是负相交多，也就意味着是在“内”部还是“外”部。
+_sign_map_rw[id.xyz] =
+  right_side_intersection - left_side_intersection +
+  back_side_intersection - front_side_intersection +
+  top_side_intersection - bottom_side_intersection;
+```
+
+这时只考虑了每个体素周围的沿轴方向的相交影响，还不够精确。因此再进行n次，每次随机取8个邻居体素，按照6种路径采样计算提高精确度。
+这里normalize_factor初始值为6因为接下来会通过6条不同的路径叠加。
+不断的翻倍，因为每次迭代都在前面的基础上累加，只有在最后一次的时候进行归一化。
+```rust
+let num_of_neighnors = 8u32;
+let mut normalize_factor = 6.0f32;
+for i in 1..=self.settings.sign_passes_count {
+  // Dispatch Compute Shader.
+  ...
+  normalize_factor += num_of_neighnors as f32 * 6.0 * normalize_factor;
+}
+```
+Compute Shader如下：
+```hlsl
+const float4 self_ray_map = _ray_map[id.xyz];
+// 循环取8个邻居体素。
+for (uint i = 0; i < g_push_constants.num_of_neighbors; i++) {
+  int3 neighbors_offset = generate_random_neighbor_offset((i * g_push_constants.num_of_neighbors) + g_push_constants.pass_id, _max_dimension * 0.05f);
+  int3 neighbors_index;
+  neighbors_index.x = min((int)(_dimensions.x - 1), max(0, (int)id.x + neighbors_offset.x));
+  neighbors_index.y = min((int)(_dimensions.y - 1), max(0, (int)id.y + neighbors_offset.y));
+  neighbors_index.z = min((int)(_dimensions.z - 1), max(0, (int)id.z + neighbors_offset.z));
+
+  // 计算6种不同路径到达邻居体素的符号累加值。
+  float accum_sign = 0.0f;
+  // xyz
+  accum_sign += (self_ray_map.x - _ray_map[int3(neighbors_index.x, id.y, id.z)].x);
+  accum_sign += (_ray_map[int3(neighbors_index.x, id.y, id.z)].y - _ray_map[int3(neighbors_index.x, neighbors_index.y, id.z)].y);
+  accum_sign += (_ray_map[int3(neighbors_index.x, neighbors_index.y, id.z)].z - _ray_map[neighbors_index].z);
+
+  // xzy
+  accum_sign += (self_ray_map.x - _ray_map[int3(neighbors_index.x, id.y, id.z)].x);
+  accum_sign += (_ray_map[int3(neighbors_index.x, id.y, id.z)].z - _ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].z);
+  accum_sign += (_ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].y - _ray_map[neighbors_index].y);
+
+  // yxz
+  accum_sign += (self_ray_map.y - _ray_map[int3(id.x, neighbors_index.y, id.z)].y);
+  accum_sign += (_ray_map[int3(id.x, neighbors_index.y, id.z)].x - _ray_map[int3(neighbors_index.x, neighbors_index.y, id.z)].x);
+  accum_sign += (_ray_map[int3(neighbors_index.x, neighbors_index.y, id.z)].z - _ray_map[neighbors_index].z);
+
+  // yzx
+  accum_sign += (self_ray_map.y - _ray_map[int3(id.x, neighbors_index.y, id.z)].y);
+  accum_sign += (_ray_map[int3(id.x, neighbors_index.y, id.z)].z - _ray_map[int3(id.x, neighbors_index.y, neighbors_index.z)].z);
+  accum_sign += (_ray_map[int3(id.x, neighbors_index.y, neighbors_index.z)].x - _ray_map[neighbors_index].x);
+
+  // zyx
+  accum_sign += (self_ray_map.z - _ray_map[int3(id.x, id.y, neighbors_index.z)].z);
+  accum_sign += (_ray_map[int3(id.x, id.y, neighbors_index.z)].y - _ray_map[int3(id.x, neighbors_index.y, neighbors_index.z)].y);
+  accum_sign += (_ray_map[int3(id.x, neighbors_index.y, neighbors_index.z)].x - _ray_map[neighbors_index].x);
+
+  // zxy
+  accum_sign += (self_ray_map.z - _ray_map[int3(id.x, id.y, neighbors_index.z)].z);
+  accum_sign += (_ray_map[int3(id.x, id.y, neighbors_index.z)].x - _ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].x);
+  accum_sign += (_ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].y - _ray_map[neighbors_index].y);
+
+  _sign_map_rw[id.xyz] += g_push_constants.normalize_factor * accum_sign + 6 * _sign_map[neighbors_index];
+}
+
+// 最后一次迭代结束时进行归一化。
+if (g_push_constants.need_normalize) {
+  const float normalize_factor_final = g_push_constants.normalize_factor + g_push_constants.num_of_neighbors * 6 * g_push_constants.normalize_factor;
+  _sign_map_rw[id.xyz] /= normalize_factor_final;
+}
+```
+
+此时如果对Sign Map进行可视化，已经可以明显的区分出模型内部区域和外部区域了。
+
+![Image Sign Map](images/sign_map.png)
+
+### 第六步：封闭表面
+
 
 To be continue...

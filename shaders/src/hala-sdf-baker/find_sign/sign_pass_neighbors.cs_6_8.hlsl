@@ -20,13 +20,13 @@ Texture3D<float> _sign_map;
 [[vk::binding(2, 1)]]
 RWTexture3D<float> _sign_map_rw;
 
-int3 generate_random_neighbor_offset(int neighbour_index, float max_dimension, float dist_to_surface) {
+int3 generate_random_neighbor_offset(int neighbour_index, float max_radius) {
   // Uniformly distributed value between -1 and 1.
   const float r = 2.0f * generate_hashed_random_float(neighbour_index) - 1;
   // Random angle for the spherical coordinates.
   const float phi = 2.0f * PI * generate_hashed_random_float(neighbour_index + 1);
   // Radius factor based on cube root of uniform distribution, scaled by surface distance and dimension.
-  const float radius = pow(generate_hashed_random_float(neighbour_index + 2), 1.0f / 3.0f) * max(1.0f, max_dimension * dist_to_surface);
+  const float radius = pow(generate_hashed_random_float(neighbour_index + 2), 1.0f / 3.0f) * max(1.0f, max_radius);
 
   // Computes coordinates on the unit sphere.
   const float cos_theta = sqrt(1 - r * r);
@@ -47,7 +47,7 @@ void main(uint3 id: SV_DispatchThreadID) {
 
   const float4 self_ray_map = _ray_map[id.xyz];
   for (uint i = 0; i < g_push_constants.num_of_neighbors; i++) {
-    int3 neighbors_offset = generate_random_neighbor_offset((i * g_push_constants.num_of_neighbors) + g_push_constants.pass_id, _max_dimension, 0.05f);
+    int3 neighbors_offset = generate_random_neighbor_offset((i * g_push_constants.num_of_neighbors) + g_push_constants.pass_id, _max_dimension * 0.05f);
     int3 neighbors_index;
     neighbors_index.x = min((int)(_dimensions.x - 1), max(0, (int)id.x + neighbors_offset.x));
     neighbors_index.y = min((int)(_dimensions.y - 1), max(0, (int)id.y + neighbors_offset.y));
