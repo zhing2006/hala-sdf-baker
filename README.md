@@ -844,7 +844,7 @@ for (uint i = start_triangle_id; i < end_triangle_id && (i < _upper_bound_count 
 ```hlsl
 // 计算线段与三角形的交点，不相交返回0，与三角形边缘相交返回0.5或-0.5，与三角形内部相交返回1.0或-1.0。
 // 符号表示是与三角形正面还是反面相交。t返回交点参数。
-float intersect_segment_triangle(float3 segment_start, float3 segment_end, Triangle tri, out float t_value) {
+float intersect_segment_to_triangle_with_face_check(float3 segment_start, float3 segment_end, Triangle tri, out float t_value) {
   /*
    * 三角形平面方程：n * (P - A) = 0
    * 线段方程：P(t) = Q + t(S - Q)
@@ -870,9 +870,9 @@ float intersect_segment_triangle(float3 segment_start, float3 segment_end, Trian
   // 这里实际计算的是 -d = Q - S。
   const float3 end_to_start = segment_start - segment_end;
 
-  // 通过叉乘计算出三角形的法线矢量。
+  // 通过叉乘计算出三角形平面的法向量。
   const float3 normal = cross(edge1, edge2);
-  // 计算线段与发现的点乘。
+  // 计算线段方向与三角形法向量的点积。
   const float dot_product = dot(end_to_start, normal);
   // 此点乘结果的符号代表着是线段与三角形正面还是反面相交。
   const float side = sign(dot_product);
@@ -914,7 +914,89 @@ float intersect_segment_triangle(float3 segment_start, float3 segment_end, Trian
     }
   }
 }
+
+// 在指定体素内，从前后左右上下三个方向对三角形求交点。
+// 返回正方向（+x +y +z）和负方向（-x -y -z）上正面相交三角形数与反面相交三角形数的差值。
+void calculate_triangle_intersection_with_3_rays(
+  in Triangle tri,
+  in int3 voxel_id,
+  out float3 intersect_forward,
+  out float3 intersect_backward
+) {
+  // 初始计数全为0。
+  intersect_forward = float3(0.0f, 0.0f, 0.0f);
+  intersect_backward = float3(0.0f, 0.0f, 0.0f);
+
+  // 相交参数t。
+  float t = 1e10f;
+  // 归一化UVW空间中线段的开始点和结束点。
+  float3 p, q;
+  // 用于累计相交方向的计数变量。
+  float intersect = 0;
+
+  // 在UVW空间中，X方向上，以体素的中心生成线段的两个端点。
+  p = (float3(voxel_id) + float3(0.0f, 0.5f, 0.5f)) / _max_dimension;
+  q = (float3(voxel_id) + float3(1.0f, 0.5f, 0.5f)) / _max_dimension;
+  // 线段从左到右，如果三角形面向右边，意味着左边是内（-），右边是外（+）。
+  // 但此时线段从三角形背面穿过回返负值，因此这里对结果取反。
+  intersect = -intersect_segment_to_triangle_with_face_check(p, q, tri, t);
+  if (t < 0.5f) {
+    // 如果t小于0.5，意味着交点靠近左侧，所以针对Backword累计符号计数。
+    intersect_backward.x += float(intersect);
+  } else {
+    // 相反，意味着交点靠近右侧，则对Forward累计符号计数。
+    intersect_forward.x += float(intersect);
+  }
+
+  // Y方向同X方向，只是轴不同。
+  ...
+
+  // Z方向同X方向，只是轴不同。
+  ...
+}
 ```
+
+有了以上两个辅助函数后，就可以以2x2的体素为单位，对全部体素计算其相邻的体素是在三角形正面多还是反面多了。
+分8次，分别从(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)位置遍历全部体素。
+```hlsl
+for (uint i = start_triangle_id; i < end_triangle_id && (i < _upper_bound_count - 1); i++) {
+  // 通过上面的辅助函数，计算出体素[x, y, z]所包含的三角形，在“前”面正相交和反相交的差值，和在“后”面正相交和反相交的插值。
+  calculate_triangle_intersection_with_3_rays(tri, int3(id.xyz), intersect_forward, intersect_backward);
+
+  // 对于“前”面的情况累计到Ray Map的体素[x, y, z]中。
+  _ray_map_rw[id.xyz] += float4(intersect_forward, 1.0f);
+
+  // 如果不越界对于“后”面的情况，累计到Ray Map的相邻体素中。
+  if (id.x > 0) {
+    _ray_map_rw[int3(id.x - 1, id.y, id.z)] += float4(intersect_backward.x, 0.0f, 0.0f, 1.0f);
+  }
+  if (id.y > 0) {
+    _ray_map_rw[int3(id.x, id.y - 1, id.z)] += float4(0.0f, intersect_backward.y, 0.0f, 1.0f);
+  }
+  if (id.z > 0) {
+    _ray_map_rw[int3(id.x, id.y, id.z - 1)] += float4(0.0f, 0.0f, intersect_backward.z, 1.0f);
+  }
+}
+```
+*注意：如果线段和三角形没有相交，`intersect_segment_to_triangle_with_face_check`返回值是0，即使执行累加也没有影响，所以这里没有做任何判断。*
+
+接下来就是分别从三个方向对这些值内加求和，这里只列出X方向的计算。
+```hlsl
+// 从正方向向负方向开始累加。
+for (int t = _dimensions.x - 2; t >= 0; t--) {
+  float count = _ray_map_rw[int3(t + 1, id.y, id.z)].x;
+  _ray_map_rw[int3(t, id.y, id.z)] += float4(count, 0, 0, count != 0 ? 1 : 0);
+}
+```
+
+至此，经过一系列计算后，已经可以通过Ray Map知道任意体素从右到左从上到下从后到前，一共经过多少个三角形正面和多少个三角形背面的差值了。
+为接下来的符号判定准备好了数据。
+
+通过下图对Ray Map的可视化可以看出，已经基本上能过够分辨模型内部区域和外部区域了。
+
+![Image Ray Map](images/ray_map.png)
+
+### 第五步：计算符号
 
 
 To be continue...
