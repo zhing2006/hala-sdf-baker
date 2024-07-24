@@ -386,7 +386,7 @@ impl SDFBaker {
       0,
       0,
       &[
-        (distance_texture, self.image3d_sampler.as_ref())
+        (ray_map, self.image3d_sampler.as_ref())
       ],
     );
     self.sdf_visualization_descriptor_set.update_uniform_buffers(
