@@ -312,7 +312,7 @@ jump_flooding_even_descriptor_set.update_storage_buffers(
 ```rust
 let num_of_steps = self.settings.max_resolution.ilog2();
 for i in 1..=num_of_steps {
-  let offset = ((1 << (num_of_steps - i)) as f32 + 0.5).floor() as i32;
+  let offset = (1 << (num_of_steps - i)) as u32;
   // 循环迭代，每次从一个Buffer把数据泛洪到另一个Buffer。
   ...
 }
@@ -1088,7 +1088,7 @@ if (g_push_constants.need_normalize) {
 
 ### 第六步：封闭表面
 
-首先先找出内外的边界，即Sign Map中正负值相邻的地方。
+首先因为Mesh不一定是完全封闭的，所以先找出内外“破洞”的边界，即指定阈值附近Sign Map中正负值相邻的地方。
 ```hlsl
 // 根据设置的阈值计算得分。
 const float self_sign_score = _sign_map[id.xyz] - g_push_constants.threshold;
@@ -1107,5 +1107,45 @@ if (abs(self_sign_score / g_push_constants.threshold) < 0.1f) {
   ...
 }
 ```
+
+接下来再把之前处理好的Voxels Buffer种的体素（被三角形覆盖的）信息写入Voxels
+```hlsl
+const float4 voxel = _voxels_buffer[id3(id.xyz)];
+if (voxel.w != 0.0f)
+  _voxels_texture_rw[id.xyz] = voxel;
+```
+
+至此所有边界处的体素、被三角形覆盖的体素，都存储到了Voxels Texture中。为跳跃泛洪做好了准备。
+```hlsl
+float best_distance = 1e6f;
+float3 best_coord = float3(0.0f, 0.0f, 0.0f);
+[unroll(3)]
+for (int z = -1; z <= 1; z++) {
+  [unroll(3)]
+  for (int y = -1; y <= 1; y++) {
+    [unroll(3)]
+    for (int x = -1; x <= 1; x++) {
+      int3 sample_coord;
+      sample_coord.x = min((int)(_dimensions.x - 1), max(0, (int)id.x + x * g_push_constants.offset));
+      sample_coord.y = min((int)(_dimensions.y - 1), max(0, (int)id.y + y * g_push_constants.offset));
+      sample_coord.z = min((int)(_dimensions.z - 1), max(0, (int)id.z + z * g_push_constants.offset));
+
+      float3 seed_coord = _voxels_texture[sample_coord].xyz;
+      float dist = length(seed_coord - (float3(id.xyz) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension);
+      if ((seed_coord.x != 0.0f || seed_coord.y != 0.0f || seed_coord.z != 0.0f) && dist < best_distance) {
+        best_coord = seed_coord;
+        best_distance = dist;
+      }
+    }
+  }
+}
+
+_voxels_texture_rw[id.xyz] = float4(best_coord, best_distance);
+```
+这里的跳跃泛洪传播和UDF的大同小异，就不做过多解释了。
+唯一不同的一点是，在进行正式跳跃前，进行了一次offset为1的初始化跳跃，这样可以事先完善一些靠近表面的细节，毕竟跳跃泛洪是一个近似算法。
+至此，整个Voxels Texture中已经保存了每个体素距离Mesh表面最近距离的坐标了。
+
+### 第七步：计算最终符号距离场
 
 To be continue...
