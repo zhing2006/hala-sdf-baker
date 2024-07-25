@@ -21,7 +21,7 @@ pub mod prefix_sum;
 pub mod ray_map;
 pub mod find_sign;
 pub mod surface_closing;
-pub mod distance_transform_winding;
+pub mod distance_transform;
 pub mod udf_initialize;
 pub mod splat_triangle_distance;
 pub mod udf_jump_flooding;
@@ -276,7 +276,7 @@ impl SDFBaker {
     self.ray_map_create_buffers_images(dimensions)?;
     self.find_sign_create_buffers_images(dimensions)?;
     self.surface_closing_create_buffers_images(dimensions)?;
-    self.dtw_create_buffers_images(dimensions)?;
+    self.distance_transform_create_buffers_images(dimensions)?;
 
     Ok(())
   }
@@ -478,7 +478,7 @@ impl SDFBaker {
       voxels_texture,
       voxels_texture_bis,
     )?;
-    let dtw_descriptor_set = self.dtw_update(
+    let dtw_descriptor_set = self.distance_transform_update(
       triangle_uvw_buffer,
       triangles_in_voxels_buffer,
       accum_counters_buffer,
@@ -599,7 +599,7 @@ impl SDFBaker {
     )?;
 
     // Distance transform winding.
-    self.dtw_compute(
+    self.distance_transform_compute(
       command_buffers,
       voxels_texture,
       voxels_buffer,

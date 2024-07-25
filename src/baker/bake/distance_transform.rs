@@ -6,7 +6,7 @@ use crate::baker::SDFBaker;
 
 impl SDFBaker {
 
-  pub(super) fn dtw_create_buffers_images(
+  pub(super) fn distance_transform_create_buffers_images(
     &mut self,
     dimensions: &[u32; 3],
   ) -> Result<(), HalaRendererError> {
@@ -34,7 +34,7 @@ impl SDFBaker {
   }
 
   #[allow(clippy::too_many_arguments)]
-  pub(super) fn dtw_update(
+  pub(super) fn distance_transform_update(
     &self,
     triangle_uvw_buffer: &hala_gfx::HalaBuffer,
     triangles_in_voxels_buffer: &hala_gfx::HalaBuffer,
@@ -44,8 +44,8 @@ impl SDFBaker {
     voxels_buffer: &hala_gfx::HalaBuffer,
     distance_texture: &hala_gfx::HalaImage,
   ) -> Result<&hala_gfx::HalaDescriptorSet, HalaRendererError> {
-    let dtw_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("distance_transform_winding")
-      .ok_or(HalaRendererError::new("Failed to get the distance_transform_winding descriptor set.", None))?;
+    let dtw_descriptor_set = self.sdf_baker_resources.descriptor_sets.get("distance_transform")
+      .ok_or(HalaRendererError::new("Failed to get the distance_transform descriptor set.", None))?;
     dtw_descriptor_set.update_storage_buffers(
       0,
       0,
@@ -85,7 +85,7 @@ impl SDFBaker {
   }
 
   #[allow(clippy::too_many_arguments)]
-  pub(super) fn dtw_compute(
+  pub(super) fn distance_transform_compute(
     &self,
     command_buffers: &hala_gfx::HalaCommandBufferSet,
     voxels_texture: &hala_gfx::HalaImage,
@@ -139,8 +139,8 @@ impl SDFBaker {
     }
 
     {
-      let program = self.sdf_baker_resources.compute_programs.get("distance_transform_winding")
-        .ok_or(HalaRendererError::new("Failed to get the distance_transform_winding compute program.", None))?;
+      let program = self.sdf_baker_resources.compute_programs.get("distance_transform")
+        .ok_or(HalaRendererError::new("Failed to get the distance_transform compute program.", None))?;
 
       program.bind(
         0,
