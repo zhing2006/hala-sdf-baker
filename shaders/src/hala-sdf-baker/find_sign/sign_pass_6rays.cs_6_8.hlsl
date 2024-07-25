@@ -11,7 +11,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   if (id.x >= _dimensions.x || id.y >= _dimensions.y || id.z >= _dimensions.z)
     return;
 
-  const float4 self_ray_map = _ray_map[id.xyz];
+  const float4 self_ray_map = _ray_map[id];
   // From right to current voxel face intersection count.
   const float right_side_intersection = self_ray_map.x;
   // From back to current voxel face intersection count.
@@ -25,7 +25,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   // From current to bottom voxel face intersection count.
   const float bottom_side_intersection = _ray_map[int3(id.x, id.y, 0)].z - self_ray_map.z;
   // Calculate the sign of the voxel.
-  _sign_map_rw[id.xyz] =
+  _sign_map_rw[id] =
     right_side_intersection - left_side_intersection +
     back_side_intersection - front_side_intersection +
     top_side_intersection - bottom_side_intersection;

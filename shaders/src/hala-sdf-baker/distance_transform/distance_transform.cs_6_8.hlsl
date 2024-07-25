@@ -36,10 +36,10 @@ void main(uint3 id : SV_DispatchThreadID) {
 
   // Retrieve the seed coordinate from a 3D texture, normalized by the maximum dimension.
   const float3 seed_coord = _voxels_texture[int3(id.x, id.y, id.z)].xyz;
-  const float3 voxel_coord = (float3(id.xyz) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
+  const float3 voxel_coord = (float3(id) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
 
   // Determine the sign of the distance based on a threshold comparison.
-  float sign_d = _sign_map[id.xyz] > g_push_constants.threshold ? -1 : 1;
+  float sign_d = _sign_map[id] > g_push_constants.threshold ? -1 : 1;
 
   // Convert the seed coordinate back to integer indices.
   const int3 id_seed = int3(seed_coord * _max_dimension);
@@ -52,17 +52,17 @@ void main(uint3 id : SV_DispatchThreadID) {
   }
   uint end_triangle_id = _accum_counters_buffer[id3(id_seed)];
 
-  float dist = 1e6f;
+  float distance = 1e6f;
   for (uint i = start_triangle_id; (i < end_triangle_id) && (i < _upper_bound_count - 1); i++) {
     const uint triangle_index = _triangles_in_voxels[i];
     Triangle tri = _triangles_uvw[triangle_index];
-    dist = min(dist, point_distance_to_triangle(voxel_coord, tri));
+    distance = min(distance, point_distance_to_triangle(voxel_coord, tri));
   }
-  if (1e6f - dist < COMMON_EPS) {
-    dist = length(seed_coord - voxel_coord);
+  if (1e6f - distance < COMMON_EPS) {
+    distance = length(seed_coord - voxel_coord);
   }
-  dist = sign_d * dist - g_push_constants.offset;
+  distance = sign_d * distance - g_push_constants.offset;
 
-  _voxels_buffer_rw[id3(id.xyz)] = float4(dist, dist, dist, dist);
-  _distance_texture_rw[id.xyz] = dist;
+  _voxels_buffer_rw[id3(id)] = float4(distance, distance, distance, distance);
+  _distance_texture_rw[id] = distance;
 }

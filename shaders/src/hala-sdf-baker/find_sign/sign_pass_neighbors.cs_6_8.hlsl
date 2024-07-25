@@ -45,7 +45,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   if (id.x >= _dimensions.x || id.y >= _dimensions.y || id.z >= _dimensions.z)
     return;
 
-  const float4 self_ray_map = _ray_map[id.xyz];
+  const float4 self_ray_map = _ray_map[id];
   for (uint i = 0; i < g_push_constants.num_of_neighbors; i++) {
     int3 neighbors_offset = generate_random_neighbor_offset((i * g_push_constants.num_of_neighbors) + g_push_constants.pass_id, _max_dimension * 0.05f);
     int3 neighbors_index;
@@ -84,11 +84,11 @@ void main(uint3 id: SV_DispatchThreadID) {
     accum_sign += (_ray_map[int3(id.x, id.y, neighbors_index.z)].x - _ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].x);
     accum_sign += (_ray_map[int3(neighbors_index.x, id.y, neighbors_index.z)].y - _ray_map[neighbors_index].y);
 
-    _sign_map_rw[id.xyz] += g_push_constants.normalize_factor * accum_sign + 6 * _sign_map[neighbors_index];
+    _sign_map_rw[id] += g_push_constants.normalize_factor * accum_sign + 6 * _sign_map[neighbors_index];
   }
 
   if (g_push_constants.need_normalize) {
     const float normalize_factor_final = g_push_constants.normalize_factor + g_push_constants.num_of_neighbors * 6 * g_push_constants.normalize_factor;
-    _sign_map_rw[id.xyz] /= normalize_factor_final;
+    _sign_map_rw[id] /= normalize_factor_final;
   }
 }

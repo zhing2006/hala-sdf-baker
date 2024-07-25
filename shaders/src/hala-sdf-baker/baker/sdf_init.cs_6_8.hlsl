@@ -46,7 +46,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   _voxels_texture_rw[int3(id.x, id.y, id.z)] = float4(0, 0, 0, 0);
   _voxels_texture_bis_rw[int3(id.x, id.y, id.z)] = float4(0, 0, 0, 0);
 
-  _voxels_buffer_rw[id3(id.xyz)] = float4(0, 0, 0, 0);
-  _counter_buffer_rw[id3(id.xyz)] = 0u;
-  _accum_counter_buffer_rw[id3(id.xyz)] = 0u;
+  _voxels_buffer_rw[id3(id)] = float4(0, 0, 0, 0);
+  _counter_buffer_rw[id3(id)] = 0u;
+  _accum_counter_buffer_rw[id3(id)] = 0u;
 }

@@ -1148,4 +1148,46 @@ _voxels_texture_rw[id.xyz] = float4(best_coord, best_distance);
 
 ### 第七步：计算最终符号距离场
 
-To be continue...
+```hlsl
+// 获取Voxels Texture中保存的种子坐标和当前体素的归一化VUW坐标。
+const float3 seed_coord = _voxels_texture[int3(id.x, id.y, id.z)].xyz;
+const float3 voxel_coord = (float3(id.xyz) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
+
+// 根据指定Threshold值确定当前体素的符号。
+float sign_d = _sign_map[id.xyz] > g_push_constants.threshold ? -1 : 1;
+
+// 根据种子坐标计算体素的索引坐标。
+const int3 id_seed = int3(seed_coord * _max_dimension);
+
+// 获取种子体素的三角形列表的Start和End位置。
+uint start_triangle_id = 0;
+[branch]
+if(id3(id_seed) > 0) {
+  start_triangle_id = _accum_counters_buffer[id3(id_seed) - 1];
+}
+uint end_triangle_id = _accum_counters_buffer[id3(id_seed)];
+
+// 遍历所有三角形，获取当前体素到种子体素所覆盖三角形的最短距离。
+float distance = 1e6f;
+for (uint i = start_triangle_id; (i < end_triangle_id) && (i < _upper_bound_count - 1); i++) {
+  const uint triangle_index = _triangles_in_voxels[i];
+  Triangle tri = _triangles_uvw[triangle_index];
+  distance = min(distance, point_distance_to_triangle(voxel_coord, tri));
+}
+// 特殊情况，种子体素没有任何三角形，距离直接使用当前体素到种子体素的UVW坐标距离。
+if (1e6f - distance < COMMON_EPS) {
+  distance = length(seed_coord - voxel_coord);
+}
+// 应用上符号和偏移，获得符号距离。
+distance = sign_d * distance - g_push_constants.offset;
+
+// 保存符号距离到Image和Buffer，Image可以用于渲染，Buffer可以用于导出。
+_voxels_buffer_rw[id3(id)] = float4(distance, distance, distance, distance);
+_distance_texture_rw[id] = distance;
+```
+
+至此，已经完成了所有的烘焙计算，获得了SDF数据。以下是SDF使用Ray Marching渲染法线方向为颜色的可视化效果。
+
+![Image SDF Normal 0](images/sdf_normal_0.png)
+
+![Image SDF Normal 1](images/sdf_normal_1.png)

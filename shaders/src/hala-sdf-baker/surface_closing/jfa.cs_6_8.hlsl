@@ -18,7 +18,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   if (id.x >= _dimensions.x || id.y >= _dimensions.y || id.z >= _dimensions.z)
     return;
 
-  const float3 self_coord = (float3(id.xyz) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
+  const float3 self_coord = (float3(id) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
   float best_distance = 1e6f;
   float3 best_coord = float3(0.0f, 0.0f, 0.0f);
   [unroll(3)]
@@ -42,5 +42,5 @@ void main(uint3 id: SV_DispatchThreadID) {
     }
   }
 
-  _voxels_texture_rw[id.xyz] = float4(best_coord, best_distance);
+  _voxels_texture_rw[id] = float4(best_coord, best_distance);
 }
