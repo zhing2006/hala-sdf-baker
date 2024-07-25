@@ -297,7 +297,7 @@ impl SDFBaker {
       );
     }
 
-    // JFA pass 1.
+    // JFA pass 0.
     {
       let program = self.sdf_baker_resources.compute_programs.get("jfa")
         .ok_or(HalaRendererError::new("Failed to get the jfa compute program.", None))?;
@@ -342,7 +342,7 @@ impl SDFBaker {
       }
     };
 
-    // JFA 2 to N passes.
+    // JFA 1 to N passes.
     let num_of_steps = self.settings.max_resolution.ilog2();
     {
       let program = self.sdf_baker_resources.compute_programs.get("jfa")
