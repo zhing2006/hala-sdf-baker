@@ -264,7 +264,7 @@ impl SDFBaker {
       );
 
       for i in 1..=num_of_steps {
-        let offset = ((1 << (num_of_steps - i)) as f32 + 0.5).floor() as i32;
+        let offset = (1 << (num_of_steps - i)) as u32;
         let read_buffer = get_read_jump_buffer(i);
         let write_buffer = get_write_jump_buffer(i);
         command_buffers.set_buffer_barriers(

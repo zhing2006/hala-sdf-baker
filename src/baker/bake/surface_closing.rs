@@ -392,7 +392,7 @@ impl SDFBaker {
           ],
         );
 
-        let offset = (2u32.pow(num_of_steps - level) as f32 + 0.5).ceil() as i32;
+        let offset = (1 << (num_of_steps - level)) as u32;
         program.push_constants(
           0,
           command_buffers,

@@ -18,6 +18,7 @@ void main(uint3 id: SV_DispatchThreadID) {
   if (id.x >= _dimensions.x || id.y >= _dimensions.y || id.z >= _dimensions.z)
     return;
 
+  const float3 self_coord = (float3(id.xyz) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension;
   float best_distance = 1e6f;
   float3 best_coord = float3(0.0f, 0.0f, 0.0f);
   [unroll(3)]
@@ -32,7 +33,7 @@ void main(uint3 id: SV_DispatchThreadID) {
         sample_coord.z = min((int)(_dimensions.z - 1), max(0, (int)id.z + z * g_push_constants.offset));
 
         float3 seed_coord = _voxels_texture[sample_coord].xyz;
-        float dist = length(seed_coord - (float3(id.xyz) + float3(0.5f, 0.5f, 0.5f)) / _max_dimension);
+        float dist = length(seed_coord - self_coord);
         if ((seed_coord.x != 0.0f || seed_coord.y != 0.0f || seed_coord.z != 0.0f) && dist < best_distance) {
           best_coord = seed_coord;
           best_distance = dist;
