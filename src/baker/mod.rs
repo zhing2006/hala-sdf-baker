@@ -647,18 +647,7 @@ impl HalaRendererTrait for SDFBaker {
       "main_dynamic.descriptor_set",
     )?;
 
-    for (mesh_index, mesh) in scene.meshes.iter().enumerate() {
-      // Prepare object data.
-      let mv_mtx = scene.camera_view_matrices[0] * mesh.transform;
-      let object_uniform = ObjectUniform {
-        m_mtx: mesh.transform,
-        i_m_mtx: mesh.transform.inverse(),
-        mv_mtx,
-        t_mv_mtx: mv_mtx.transpose(),
-        it_mv_mtx: mv_mtx.inverse().transpose(),
-        mvp_mtx: scene.camera_proj_matrices[0] * mv_mtx,
-      };
-
+    for (mesh_index, _mesh) in scene.meshes.iter().enumerate() {
       // Create object uniform buffer.
       let mut buffers = Vec::with_capacity(context.swapchain.num_of_images);
       for index in 0..context.swapchain.num_of_images {
@@ -669,8 +658,6 @@ impl HalaRendererTrait for SDFBaker {
           hala_gfx::HalaMemoryLocation::CpuToGpu,
           &format!("object_{}_{}.uniform_buffer", mesh_index, index),
         )?;
-
-        buffer.update_memory(0, &[object_uniform])?;
 
         buffers.push(buffer);
       }
