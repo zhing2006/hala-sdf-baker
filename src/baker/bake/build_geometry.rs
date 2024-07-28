@@ -581,7 +581,7 @@ impl SDFBaker {
           &[render_target],
           None,
           (0, 0, render_target.extent.width, render_target.extent.height),
-          Some(clear_color),
+          &[Some(clear_color)],
           None,
           None,
         );
@@ -711,7 +711,7 @@ impl SDFBaker {
           &[render_target],
           None,
           (0, 0, render_target.extent.width, render_target.extent.height),
-          Some(clear_color),
+          &[Some(clear_color)],
           None,
           None,
         );
