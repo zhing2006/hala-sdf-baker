@@ -7,7 +7,6 @@ struct PushConstants {
   uint primitive_index;
 #ifdef USE_MESH_SHADER
   uint meshlet_count;
-  uint dispatch_size_x;
 #endif
 };
 
@@ -95,7 +94,6 @@ SamplerState g_samplers[];
 
 #ifdef USE_MESH_SHADER
 struct MeshShaderPayLoad {
-  uint task_group_id;
-  bool is_visibles[TASK_SHADER_GROUP_SIZE];
+  uint meshlet_indices[TASK_SHADER_GROUP_SIZE];
 };
 #endif

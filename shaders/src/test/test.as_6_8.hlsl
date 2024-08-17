@@ -23,17 +23,21 @@ void main(
   const Meshlet meshlet = meshlet_buffer[meshlet_index];
   const float3 camera_position = cameras[0].position;
 
-  ms_payload.task_group_id = group_id.x;
+  bool is_visible = true;
 
   // printf("[TASK SHADER] dispatch_thread_id: %d\n", dispatch_thread_id.x);
 
   const float3 cone_apex = mul(per_object_data.m_mtx, float4(meshlet.cone_apex, 1.0)).xyz;
   const float3 cone_axis = normalize(mul(float4(meshlet.cone_axis, 0.0), per_object_data.i_m_mtx).xyz);
   if (dot(normalize(cone_apex - camera_position), cone_axis) >= meshlet.cone_cutoff)
-    ms_payload.is_visibles[group_thread_id.x] = false;
-  else
-    ms_payload.is_visibles[group_thread_id.x] = true;
+    is_visible = false;
+
+  if (is_visible) {
+    const uint index = WavePrefixCountBits(is_visible);
+    ms_payload.meshlet_indices[index] = meshlet_index;
+  }
 
   // One meshlet per group.
-  DispatchMesh((g_push_constants.meshlet_count + g_push_constants.dispatch_size_x - 1) / g_push_constants.dispatch_size_x, 1, 1, ms_payload);
+  const uint visible_count = WaveActiveCountBits(is_visible);
+  DispatchMesh(visible_count, 1, 1, ms_payload);
 }

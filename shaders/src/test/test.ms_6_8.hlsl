@@ -26,17 +26,10 @@ void main(
   uint3 group_thread_id : SV_GroupThreadID
 ) {
   // One meshlet per group.
-  const uint meshlet_index = ms_payload.task_group_id * TASK_SHADER_GROUP_SIZE + group_id.x;
+  const uint meshlet_index = ms_payload.meshlet_indices[group_id.x];
   // printf("[MESH SHADER] meshlet_index: %d\n", meshlet_index);
   // printf("[MESH SHADER] VERTEX_PER_THREAD: %d TRIANGLE_PER_THREAD: %d\n", VERTICES_PER_THREAD, TRIANGLE_PER_THREAD);
   // printf("[MESH SHADER] group_thread_id: %d\n", group_thread_id.x);
-
-  const bool is_visible = ms_payload.is_visibles[group_id.x % TASK_SHADER_GROUP_SIZE];
-  if (!is_visible) {
-    // printf("[MESH SHADER] meshlet_index: %d is not visible\n", meshlet_index);
-    SetMeshOutputCounts(0, 0);
-    return;
-  }
 
   const ObjectUniformBuffer per_object_data = g_per_object_data[g_push_constants.object_index];
 
