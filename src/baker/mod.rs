@@ -450,6 +450,7 @@ impl SDFBaker {
         &self.resources.transfer_command_buffers,
         scene_in_cpu,
         false,
+        false,
       false)
     }?;
 
