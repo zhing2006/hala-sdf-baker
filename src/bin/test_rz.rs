@@ -180,6 +180,8 @@ impl HalaApplication for RasterizationRendererApplication {
               ui.text("This is a test for the rasterization renderer.");
             }
           );
+
+          Ok(())
         }
       )?;
       imgui.end_frame()?;

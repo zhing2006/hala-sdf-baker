@@ -269,6 +269,8 @@ impl HalaApplication for SDFBakerApplication {
 
           // let mut b = true;
           // ui.show_demo_window(&mut b);
+
+          Ok(())
         }
       )?;
       imgui.end_frame()?;
