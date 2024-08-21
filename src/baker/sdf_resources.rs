@@ -272,7 +272,7 @@ impl SDFBakerResources {
         "image_2_screen_2.descriptor_set",
       )?,
     ];
-    let image_2_screen_program = HalaGraphicsProgram::new(
+    let image_2_screen_program = HalaGraphicsProgram::with_swapchain(
       logical_device.clone(),
       swapchain,
       &[&image_2_screen_descriptor_sets[0].layout],

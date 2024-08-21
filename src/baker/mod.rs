@@ -280,7 +280,7 @@ impl SDFBaker {
     )?;
 
     let bounds_desc = sdf_baker_config.graphics_programs.get("bounds").ok_or(HalaRendererError::new("Failed to get graphics program \"bounds\".", None))?;
-    let bounds_program = HalaGraphicsProgram::new(
+    let bounds_program = HalaGraphicsProgram::with_swapchain(
       Rc::clone(&resources.context.borrow().logical_device),
       &resources.context.borrow().swapchain,
       &[] as &[&hala_gfx::HalaDescriptorSetLayout],
@@ -326,7 +326,7 @@ impl SDFBaker {
       0,
       "cross_xyz.descriptor_set",
     )?;
-    let cross_xyz_program = HalaGraphicsProgram::new(
+    let cross_xyz_program = HalaGraphicsProgram::with_swapchain(
       Rc::clone(&resources.context.borrow().logical_device),
       &resources.context.borrow().swapchain,
       &[&cross_xyz_descriptor_set.layout],
@@ -368,7 +368,7 @@ impl SDFBaker {
       0,
       "sdf_visualization.descriptor_set",
     )?;
-    let sdf_visualization_program = HalaGraphicsProgram::new(
+    let sdf_visualization_program = HalaGraphicsProgram::with_swapchain(
       Rc::clone(&resources.context.borrow().logical_device),
       &resources.context.borrow().swapchain,
       &[
@@ -756,7 +756,7 @@ impl HalaRendererTrait for SDFBaker {
 
     // Create graphics pipelines.
     let wireframe_desc = self.baker_config.graphics_programs.get("wireframe").ok_or(HalaRendererError::new("Failed to get the wireframe program.", None))?;
-    let wireframe_program = HalaGraphicsProgram::new(
+    let wireframe_program = HalaGraphicsProgram::with_swapchain(
       Rc::clone(&context.logical_device),
       &context.swapchain,
       &[
@@ -786,7 +786,7 @@ impl HalaRendererTrait for SDFBaker {
       "wireframe"
     )?;
     let wireframe_debug_desc = self.baker_config.graphics_programs.get("wireframe_debug").ok_or(HalaRendererError::new("Failed to get the wireframe debug program.", None))?;
-    let wireframe_debug_program = HalaGraphicsProgram::new(
+    let wireframe_debug_program = HalaGraphicsProgram::with_swapchain(
       Rc::clone(&context.logical_device),
       &context.swapchain,
       &[
