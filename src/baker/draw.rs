@@ -53,7 +53,7 @@ impl SDFBaker {
     );
 
     // Rendering.
-    command_buffers.begin_rendering(
+    command_buffers.begin_rendering_with_swapchain(
       index,
       &context.swapchain,
       (0, 0, self.info.width, self.info.height),
