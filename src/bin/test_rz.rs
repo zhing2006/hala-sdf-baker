@@ -4,6 +4,7 @@ use anyhow::{
 };
 
 use hala_imgui::{
+  HalaApplicationContextTrait,
   HalaApplication,
   HalaImGui,
 };
@@ -16,23 +17,23 @@ use hala_renderer::{
 
 use hala_sdf_baker::config;
 
-/// The rasterization renderer application.
-struct RasterizationRendererApplication {
+/// The rasterization renderer application context.
+struct RasterizationRendererApplicationContext {
   log_file: String,
   config: config::AppConfig,
   renderer: Option<HalaRenderer>,
   imgui: Option<HalaImGui>,
 }
 
-impl Drop for RasterizationRendererApplication {
+impl Drop for RasterizationRendererApplicationContext {
   fn drop(&mut self) {
     self.imgui = None;
     self.renderer = None;
   }
 }
 
-/// The implementation of the rasterization renderer application.
-impl RasterizationRendererApplication {
+/// The implementation of the rasterization renderer application context.
+impl RasterizationRendererApplicationContext {
 
   pub fn new() -> Result<Self> {
     let log_file = "./logs/test.log";
@@ -57,8 +58,8 @@ impl RasterizationRendererApplication {
 
 }
 
-/// The implementation of the application trait for the rasterization renderer application.
-impl HalaApplication for RasterizationRendererApplication {
+/// The implementation of the application context trait for the rasterization renderer application context.
+impl HalaApplicationContextTrait for RasterizationRendererApplicationContext {
 
   fn get_log_console_fmt(&self) -> &str {
     "{d(%H:%M:%S)} {h({l:<5})} {t:<20.20} - {m}{n}"
@@ -219,10 +220,11 @@ impl HalaApplication for RasterizationRendererApplication {
 
 fn main() -> Result<()> {
   // Initialize the application.
-  let mut app = RasterizationRendererApplication::new()?;
-  app.init()?;
+  let context = RasterizationRendererApplicationContext::new()?;
+  context.init()?;
 
   // Run the application.
+  let mut app = HalaApplication::new(Box::new(context));
   app.run()?;
 
   Ok(())
