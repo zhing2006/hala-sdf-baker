@@ -172,7 +172,7 @@ impl SDFBaker {
 
     let bake_command_buffers = hala_gfx::HalaCommandBufferSet::new(
       Rc::clone(&resources.context.borrow().logical_device),
-      Rc::clone(&resources.context.borrow().pools),
+      Rc::clone(&resources.context.borrow().command_pools),
       hala_gfx::HalaCommandBufferType::GRAPHICS,
       hala_gfx::HalaCommandBufferLevel::PRIMARY,
       1,
