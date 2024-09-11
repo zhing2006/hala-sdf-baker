@@ -139,7 +139,7 @@ impl HalaApplicationContextTrait for SDFBakerApplicationContext {
     baker.commit()?;
 
     self.imgui = Some(HalaImGui::new(
-      std::rc::Rc::clone(&(*baker.resources().context)),
+      std::rc::Rc::clone(&baker.resources().context),
       false,
     )?);
 
